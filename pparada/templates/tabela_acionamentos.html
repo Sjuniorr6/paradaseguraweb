@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+{% include "components/components_sidebar.html" %}
+
+<!-- Contêiner principal ocupando a tela toda -->
+<div class="container-fluid py-4" style="min-height: 100vh; overflow-y: auto;">
+
+    <div class="text-center mb-4">
+        <img src="{% static 'images/backgrownd.png' %}" 
+             alt="Imagem de fundo" 
+             style="max-width: 150px;">
+    </div>
+
+    <h2 class="text-center mb-4">Histórico de Paradas</h2>
+
+    <!-- Formulário de Filtro por Embarcador -->
+    <form method="get" action="." class="mb-4">
+        <div class="row justify-content-center">
+            <label for="embarcador" class="col-sm-2 col-form-label text-right">
+                Pesquisar por Embarcador:
+            </label>
+            <div class="col-sm-6">
+                <input
+                    type="text"
+                    name="embarcador"
+                    id="embarcador"
+                    class="form-control"
+                    placeholder="Digite o nome do embarcador"
+                    value="{{ request.GET.embarcador }}"
+                />
+            </div>
+            <div class="col-sm-2">
+                <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+            </div>
+        </div>
+        <!-- Botão Limpar Filtros -->
+        <div class="row justify-content-center mt-2">
+            <div class="col-sm-2 text-center">
+                <a href="{% url 'historico_parada' %}" class="btn btn-secondary w-100">Limpar Filtros</a>
+            </div>
+        </div>
+    </form>
+
+
+
+    <!-- Tabela para Exibir a Lista de Paradas -->
+    <div class="table-responsive">
+      <table class="table table-striped table-hover align-middle">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Embarcador</th>
+            <th>Transportador</th>
+            <th>Motorista</th>
+            <th>Placa Cavalo</th>
+            <th>Placa Carreta</th>
+            <th>Nome do Posto</th>
+            <th>Iscas</th>
+            <th>Cadeados</th>
+            <th>Data de Criação</th>
+            <th>Status</th>
+            <th>Saída (se EM VIAGEM)</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in pa %}
+          <tr>
+            <td>{{ item.id }}</td>
+            <td>{{ item.embarcador }}</td>
+            <td>{{ item.transportador }}</td>
+            <td>{{ item.nome_motorista }}</td>
+            <td>{{ item.placa_cavalo }}</td>
+            <td>{{ item.placa_carreta }}</td>
+            <td>{{ item.get_tipo_posto_display }}</td>
+            <td>{{ item.id_rastreador }}</td>
+            <td>{{ item.id_cadeado }}</td>
+            <td>{{ item.data_criacao|date:"d/m/Y" }}</td>
+            <td>{{ item.status }}</td>
+            <td>
+              {% if item.status == "EM VIAGEM" %}
+                {{ item.saida|date:"d/m/Y H:i:s" }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>
+              <!-- Botão Visualizar -->
+              <a href="{% url 'Parada2DetailView' item.id %}" class="btn btn-primary btn-sm mb-1">
+                Visualizar
+              </a>
+
+              <!-- Botão que abre o modal de exclusão -->
+              <button class="btn btn-danger btn-sm"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalExcluir{{ item.id }}">
+                Excluir
+              </button>
+
+              <!-- Modal de confirmação de exclusão (Bootstrap 5) -->
+              <div class="modal fade"
+                   id="modalExcluir{{ item.id }}"
+                   tabindex="-1"
+                   aria-labelledby="modalExcluirLabel{{ item.id }}"
+                   aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                      <h5 class="modal-title" id="modalExcluirLabel{{ item.id }}">
+                        Excluir Parada
+                      </h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                      <p>Tem certeza que deseja excluir a parada
+                         <strong>#{{ item.id }}</strong> ({{ item.embarcador }})?
+                      </p>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button"
+                              class="btn btn-secondary"
+                              data-bs-dismiss="modal">
+                        Cancelar
+                      </button>
+                      <!-- Formulário de exclusão -->
+                      <form action="{% url 'parada_delete' item.id %}"
+                            method="post"
+                            class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                          Excluir
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Fim do modal -->
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="13" class="text-center">Nenhuma parada encontrada.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginação (arquivo _pagination.html) -->
+    {% include 'components/_pagination.html' %}
+</div>
+{% endblock content %}

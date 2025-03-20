@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+Mapa de Dispositivos
+{% endblock title %}
+
+{% block content %}
+<!-- Container principal que ocupa a tela toda (coluna) -->
+<div class="main-container">
+  <!-- Área do mapa (70% da altura) -->
+  <div id="map-container">
+    <!-- Navbar sobreposta no mapa -->
+    <div class="navbar-overlay">
+      {% include "components/components_sidebar.html" %}
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <!-- Área da tabela (30% da altura) -->
+  <div id="info-container">
+    <h2>Informações dos Dispositivos</h2>
+    <div class="table-wrapper">
+      <table id="devices-table">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>ID</th>
+            <th>Data e Hora</th>
+            <th>Bateria</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Cerca</th>
+          </tr>
+        </thead>
+        <tbody id="devices-table-body">
+          <!-- Linhas serão adicionadas dinamicamente -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Leaflet CSS/JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+<style>
+  /* Reset básico: ocupar tela inteira */
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Layout em coluna (mapa em cima, tabela embaixo) */
+  .main-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100vh; /* preenche toda a janela */
+    overflow: hidden;
+  }
+
+  /* Mapa ocupa 70% da altura */
+  #map-container {
+    position: relative;
+    flex: 7; /* 70% */
+    border-bottom: 2px solid #ddd;
+  }
+
+  #map {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Navbar sobreposta no mapa */
+  .navbar-overlay {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 9999;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px;
+    border-radius: 4px;
+  }
+
+  /* Tabela ocupa 30% da altura */
+  #info-container {
+    flex: 3; /* 30% */
+    background: #fff;
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  #info-container h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  table, th, td {
+    border: 1px solid #ddd;
+  }
+
+  th, td {
+    padding: 8px;
+    text-align: left;
+  }
+
+  th {
+    background-color: #f2f2f2;
+  }
+
+  tr.clickable {
+    cursor: pointer;
+  }
+
+  /* Responsividade para mobile */
+  @media (max-width: 768px) {
+    #info-container {
+      padding: 10px;
+    }
+    table {
+      font-size: 12px;
+    }
+    th, td {
+      padding: 6px;
+    }
+    .navbar-overlay {
+      top: 5px;
+      left: 5px;
+      padding: 5px;
+    }
+  }
+</style>
+
+<script>
+  // Converte datetime do formato "YYYYMMDDHHMMSS" para "DD/MM/AAAA HH:MM"
+  function convertDatetime(datetimeStr) {
+    if (datetimeStr && datetimeStr.length === 14) {
+      const year = datetimeStr.slice(0, 4);
+      const month = datetimeStr.slice(4, 6);
+      const day = datetimeStr.slice(6, 8);
+      const hours = datetimeStr.slice(8, 10);
+      const minutes = datetimeStr.slice(10, 12);
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
+    }
+    return datetimeStr;
+  }
+
+  // Converte tensão em percentual
+  function voltageToPercentage(voltage) {
+    var minV = 3.5, maxV = 4.2;
+    var perc = ((voltage - minV) / (maxV - minV)) * 100;
+    perc = Math.max(0, Math.min(100, perc));
+    return Math.round(perc) + '%';
+  }
+
+  // Reverse Geocoding via Nominatim
+  function reverseGeocode(lat, lng, callback) {
+    var url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+    fetch(url, {
+      headers: {
+        'User-Agent': 'SeuApp/1.0 (seuemail@dominio.com)'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      callback(data.display_name || "Endereço não encontrado");
+    })
+    .catch(error => {
+      console.error("Erro no reverse geocoding:", error);
+      callback("Erro ao obter endereço");
+    });
+  }
+
+  // Determina a cerca em que o dispositivo se encontra
+  function getDeviceFence(lat, lng, geofences) {
+    let matchingFences = [];
+    geofences.forEach(function(fence) {
+      if (!fence.center || !fence.radius) return;
+      var distance = L.latLng(lat, lng).distanceTo(L.latLng(fence.center[0], fence.center[1]));
+      if (distance <= fence.radius) {
+        matchingFences.push({name: fence.name, distance: distance});
+      }
+    });
+    if (matchingFences.length > 0) {
+      matchingFences.sort((a, b) => a.distance - b.distance);
+      return matchingFences[0].name;
+    }
+    return "Sem Cerca";
+  }
+
+  // Inicializa o mapa
+  var map = L.map('map').setView([-23.5505, -46.6333], 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  // Ícones menores para Cadeado (lock) e Isca (circuit-board)
+  var lockIcon = new L.Icon({
+    iconUrl: "{% static 'images/lock.png' %}",
+    iconSize: [30, 45],         // Ícone menor
+    iconAnchor: [15, 45],       // Ajuste o anchor para centralizar
+    popupAnchor: [0, -35],      // Ajuste se necessário
+    shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+    shadowSize: [40, 40]        // Sombras proporcionais
+  });
+
+  var circuitBoardIcon = new L.Icon({
+    iconUrl: "{% static 'images/circuit-board.png' %}",
+    iconSize: [30, 45],         // Ícone menor
+    iconAnchor: [15, 45],
+    popupAnchor: [0, -35],
+    shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+    shadowSize: [40, 40]
+  });
+
+  // Camadas para marcadores e cercas
+  var markersLayer = L.layerGroup().addTo(map);
+  var fencesLayer = L.layerGroup().addTo(map);
+  var markersDict = {};
+
+  // Exibe somente o marcador selecionado
+  function exibirSomenteMarker(id, lat, lng) {
+    markersLayer.clearLayers();
+    if (markersDict[id]) {
+      markersLayer.addLayer(markersDict[id]);
+      map.panTo([lat, lng]);
+      markersDict[id].openPopup();
+    }
+  }
+
+  // Restaura todos os marcadores (recarrega os dados)
+  function restaurarMarcadores() {
+    atualizarDados();
+  }
+
+  // Função principal para buscar dados
+  function atualizarDados() {
+    fetch("{% url 'get_devices_data' %}")
+      .then(response => response.json())
+      .then(data => {
+        // Limpa camadas e tabela
+        markersLayer.clearLayers();
+        fencesLayer.clearLayers();
+        var tableBody = document.getElementById('devices-table-body');
+        tableBody.innerHTML = "";
+        markersDict = {};
+
+        // Função para adicionar um dispositivo
+        function adicionarDispositivo(device, tipo, icon) {
+          if (!device.latitude || !device.longitude) return;
+          var lat = parseFloat(device.latitude);
+          var lng = parseFloat(device.longitude);
+          var idDevice = (tipo === "Cadeado") ? (device.unitnumber || device.deviceId) : device.deviceId;
+          
+          var marker = L.marker([lat, lng], {icon: icon}).addTo(markersLayer);
+          markersDict[idDevice] = marker;
+
+          var cercaCalculada = getDeviceFence(lat, lng, data.geofences);
+
+          marker.bindPopup(`
+            <strong>${tipo}:</strong> ${idDevice}<br>
+            <strong>Bateria:</strong> ${(tipo === "Cadeado")
+              ? (device.main_voltage ? voltageToPercentage(parseFloat(device.main_voltage)) : "N/A")
+              : (device.batteryPercentual || "N/A")}<br>
+            <strong>Localização:</strong> ${lat}, ${lng}<br>
+            <strong>Endereço:</strong> Carregando...<br>
+            <strong>Cerca:</strong> ${cercaCalculada}
+          `);
+
+          reverseGeocode(lat, lng, function(endereco) {
+            marker.setPopupContent(`
+              <strong>${tipo}:</strong> ${idDevice}<br>
+              <strong>Bateria:</strong> ${(tipo === "Cadeado")
+                ? (device.main_voltage ? voltageToPercentage(parseFloat(device.main_voltage)) : "N/A")
+                : (device.batteryPercentual || "N/A")}<br>
+              <strong>Localização:</strong> ${lat}, ${lng}<br>
+              <strong>Endereço:</strong> ${endereco}<br>
+              <strong>Cerca:</strong> ${cercaCalculada}
+            `);
+          });
+
+          // Linha na tabela
+          var row = document.createElement('tr');
+          row.classList.add('clickable');
+          row.setAttribute('data-device-id', idDevice);
+          row.setAttribute('data-lat', lat);
+          row.setAttribute('data-lng', lng);
+          row.innerHTML = `
+            <td>${tipo}</td>
+            <td>${idDevice}</td>
+            <td>${convertDatetime(device.datetime_utc || device.date) || 'H:I'}</td>
+            <td>${(tipo === "Cadeado")
+              ? (device.main_voltage ? voltageToPercentage(parseFloat(device.main_voltage)) : "N/A")
+              : (device.batteryPercentual || "N/A")}</td>
+            <td>${device.latitude}</td>
+            <td>${device.longitude}</td>
+            <td>${cercaCalculada}</td>
+          `;
+          row.addEventListener('click', function(event) {
+            event.stopPropagation();
+            var id = this.getAttribute('data-device-id');
+            var latValue = parseFloat(this.getAttribute('data-lat'));
+            var lngValue = parseFloat(this.getAttribute('data-lng'));
+            exibirSomenteMarker(id, latValue, lngValue);
+          });
+          tableBody.appendChild(row);
+        }
+
+        // Processa dispositivos T42 (Cadeado) -> lockIcon
+        data.t42_devices.forEach(device => {
+          adicionarDispositivo(device, "Cadeado", lockIcon);
+        });
+
+        // Processa dispositivos STC (Isca) -> circuitBoardIcon
+        data.stc_devices.forEach(device => {
+          adicionarDispositivo(device, "Isca", circuitBoardIcon);
+        });
+
+        // Adiciona as cercas
+        data.geofences.forEach(fence => {
+          if (!fence.center || !fence.radius) {
+            console.error("❌ ERRO: Cerca inválida", fence);
+            return;
+          }
+          var circle = L.circle(fence.center, {
+            color: 'green',
+            fillColor: '#008000',
+            fillOpacity: 0.3,
+            radius: fence.radius
+          }).addTo(fencesLayer);
+          circle.bindPopup(`<strong>${fence.name}</strong><br>Raio: ${fence.radius / 1000} km`);
+        });
+      })
+      .catch(error => {
+        console.error("❌ ERRO AO ATUALIZAR DADOS:", error);
+      });
+  }
+
+  // Inicia
+  atualizarDados();
+  setInterval(atualizarDados, 90000);
+
+  // Se clicar fora de uma linha, restaura todos os marcadores
+  document.addEventListener('click', function(event) {
+    if (!event.target.closest('tr.clickable')) {
+      restaurarMarcadores();
+    }
+  });
+</script>
+{% endblock content %}

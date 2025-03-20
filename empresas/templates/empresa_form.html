@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "components/components_sidebar.html" %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <!-- Card para o formulário -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h4 class="card-title mb-0">Criar Empresa</h4>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <div class="text-end">
+              <button type="submit" class="btn btn-success">Salvar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <!-- Fim do card -->
+    </div>
+  </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Mapa de Dispositivos
+{% endblock title %}
+
+{% block content %}
+<!-- Container principal com mapa e tabela -->
+<div class="main-container">
+  <!-- Área do mapa com navbar sobreposta -->
+  <div id="map-container">
+    <!-- Navbar posicionada sobre o mapa com z-index elevado -->
+    <div class="navbar-overlay">
+      {% include "components/components_sidebar.html" %}
+    </div>
+    <div id="map"></div>
+  </div>
+  
+  <!-- Área da tabela (abaixo) -->
+  <div id="info-container">
+    <h2>Informações dos Dispositivos</h2>
+    <div class="table-wrapper">
+      <table id="devices-table">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>ID</th>
+            <th>Data e Hora</th>
+            <th>Bateria</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Cerca</th>
+          </tr>
+        </thead>
+        <tbody id="devices-table-body">
+          <!-- Linhas serão adicionadas dinamicamente -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Inclui os arquivos CSS e JS do Leaflet (via CDN) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+<style>
+  /* Reset básico */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  /* Estilização geral */
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+  }
+  
+  /* Título principal */
+  h1 {
+    background: #007bff;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 0;
+  }
+  
+  /* Container principal com layout em duas partes (mapa e tabela) */
+  .main-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  /* Área do mapa */
+  #map-container {
+    position: relative;
+    flex: 1;
+    border-bottom: 2px solid #ddd;
+  }
+  
+  #map {
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Navbar sobreposta no mapa com z-index elevado para ficar sempre à frente */
+  .navbar-overlay {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 9999;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px;
+    border-radius: 4px;
+  }
+  
+  /* Área das informações - tabela */
+  #info-container {
+    flex: 1;
+    background: white;
+    padding: 20px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
+  #info-container h2 {
+    font-size: 20px;
+    color: #333;
+    margin-bottom: 15px;
+  }
+  
+  /* Wrapper da tabela para possibilitar scroll horizontal se necessário */
+  .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    table-layout: auto;
+    min-width: 600px;
+  }
+  
+  table, th, td {
+    border: 1px solid #ddd;
+  }
+  
+  th, td {
+    padding: 8px;
+    text-align: left;
+    word-wrap: break-word;
+  }
+  
+  th {
+    background-color: #f2f2f2;
+  }
+  
+  /* Linha clicável */
+  tr.clickable {
+    cursor: pointer;
+  }
+  
+  /* Responsividade para mobile */
+  @media (max-width: 768px) {
+    #info-container {
+      padding: 10px;
+    }
+    table {
+      font-size: 12px;
+    }
+    th, td {
+      padding: 6px;
+    }
+    .navbar-overlay {
+      top: 5px;
+      left: 5px;
+      padding: 5px;
+    }
+  }
+</style>
+
+<script>
+  // Converte datetime do formato "YYYYMMDDHHMMSS" para "DD/MM/AAAA HH:MM"
+  function convertDatetime(datetimeStr) {
+    if (datetimeStr && datetimeStr.length === 14) {
+      const year = datetimeStr.slice(0, 4);
+      const month = datetimeStr.slice(4, 6);
+      const day = datetimeStr.slice(6, 8);
+      const hours = datetimeStr.slice(8, 10);
+      const minutes = datetimeStr.slice(10, 12);
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
+    }
+    return datetimeStr;
+  }
+
+  // Converte tensão em percentual
+  function voltageToPercentage(voltage) {
+    var minV = 3.5, maxV = 4.2;
+    var perc = ((voltage - minV) / (maxV - minV)) * 100;
+    perc = Math.max(0, Math.min(100, perc));
+    return Math.round(perc) + '%';
+  }
+
+  // Reverse Geocoding via Nominatim
+  function reverseGeocode(lat, lng, callback) {
+    var url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+    fetch(url, {
+      headers: {
+        'User-Agent': 'SeuApp/1.0 (seuemail@dominio.com)'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      callback(data.display_name || "Endereço não encontrado");
+    })
+    .catch(error => {
+      console.error("Erro no reverse geocoding:", error);
+      callback("Erro ao obter endereço");
+    });
+  }
+
+  // Determina a cerca em que o dispositivo se encontra
+  function getDeviceFence(lat, lng, geofences) {
+    let matchingFences = [];
+    geofences.forEach(function(fence) {
+      if (!fence.center || !fence.radius) return;
+      var distance = L.latLng(lat, lng).distanceTo(L.latLng(fence.center[0], fence.center[1]));
+      if (distance <= fence.radius) {
+        matchingFences.push({name: fence.name, distance: distance});
+      }
+    });
+    if (matchingFences.length > 0) {
+      matchingFences.sort(function(a, b) { return a.distance - b.distance; });
+      return matchingFences[0].name;
+    }
+    return "Sem Cerca";
+  }
+
+  // Inicializa o mapa
+  var map = L.map('map').setView([-23.5505, -46.6333], 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  // Ícones personalizados
+  var blueIcon = new L.Icon({
+    iconUrl: "{% static 'images/lock.png' %}",
+    iconSize: [40, 65],
+    iconAnchor: [20, 65],
+    popupAnchor: [0, -200],
+    shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+    shadowSize: [50, 50]
+  });
+  var redIcon = new L.Icon({
+    iconUrl: "{% static 'images/circuit-board.png' %}",
+    iconSize: [40, 65],
+    iconAnchor: [20, 65],
+    popupAnchor: [0, -200],
+    shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+    shadowSize: [50, 50]
+  });
+
+  // Camadas para marcadores e cercas
+  var markersLayer = L.layerGroup().addTo(map);
+  var fencesLayer = L.layerGroup().addTo(map);
+
+  // Dicionário para armazenar marcadores por ID
+  var markersDict = {};
+
+  // Exibe somente o marcador selecionado
+  function exibirSomenteMarker(id, lat, lng) {
+    markersLayer.clearLayers();
+    if (markersDict[id]) {
+      markersLayer.addLayer(markersDict[id]);
+      map.panTo([lat, lng]);
+      markersDict[id].openPopup();
+    }
+  }
+
+  // Restaura todos os marcadores (recarrega os dados)
+  function restaurarMarcadores() {
+    atualizarDados();
+  }
+
+  // Função principal para buscar dados
+  function atualizarDados() {
+    fetch("{% url 'get_devices_data' %}")
+      .then(response => response.json())
+      .then(data => {
+        // Limpa camadas e tabela
+        markersLayer.clearLayers();
+        fencesLayer.clearLayers();
+        var tableBody = document.getElementById('devices-table-body');
+        tableBody.innerHTML = "";
+        markersDict = {};
+
+        // Adiciona um dispositivo T42 ou STC
+        function adicionarDispositivo(device, tipo, icon) {
+          if (!device.latitude || !device.longitude) return;
+          var lat = parseFloat(device.latitude);
+          var lng = parseFloat(device.longitude);
+          var idDevice = (tipo === "Cadeado") ? (device.unitnumber || device.deviceId) : device.deviceId;
+          
+          var marker = L.marker([lat, lng], {icon: icon}).addTo(markersLayer);
+          markersDict[idDevice] = marker;
+
+          var cercaCalculada = getDeviceFence(lat, lng, data.geofences);
+
+          marker.bindPopup(`
+            <strong>${tipo}:</strong> ${idDevice}<br>
+            <strong>Bateria:</strong> ${(tipo === "Cadeado")
+              ? (device.main_voltage ? voltageToPercentage(parseFloat(device.main_voltage)) : "N/A")
+              : (device.batteryPercentual || "N/A")}<br>
+            <strong>Localização:</strong> ${lat}, ${lng}<br>
+            <strong>Endereço:</strong> Carregando...<br>
+            <strong>Cerca:</strong> ${cercaCalculada}
+          `);
+
+          reverseGeocode(lat, lng, function(endereco) {
+            marker.setPopupContent(`
+              <strong>${tipo}:</strong> ${idDevice}<br>
+              <strong>Bateria:</strong> ${(tipo === "Cadeado")
+                ? (device.main_voltage ? voltageToPercentage(parseFloat(device.main_voltage)) : "N/A")
+                : (device.batteryPercentual || "N/A")}<br>
+              <strong>Localização:</strong> ${lat}, ${lng}<br>
+              <strong>Endereço:</strong> ${endereco}<br>
+              <strong>Cerca:</strong> ${cercaCalculada}
+            `);
+          });
+
+          // Linha na tabela
+          var row = document.createElement('tr');
+          row.classList.add('clickable');
+          row.setAttribute('data-device-id', idDevice);
+          row.setAttribute('data-lat', lat);
+          row.setAttribute('data-lng', lng);
+          row.innerHTML = `
+            <td>${tipo}</td>
+            <td>${idDevice}</td>
+            <td>${convertDatetime(device.datetime_utc || device.date) || 'H:I'}</td>
+            <td>${(tipo === "Cadeado")
+              ? (device.main_voltage ? voltageToPercentage(parseFloat(device.main_voltage)) : "N/A")
+              : (device.batteryPercentual || "N/A")}</td>
+            <td>${device.latitude}</td>
+            <td>${device.longitude}</td>
+            <td>${cercaCalculada}</td>
+          `;
+          row.addEventListener('click', function(event) {
+            event.stopPropagation();
+            var id = this.getAttribute('data-device-id');
+            var latValue = parseFloat(this.getAttribute('data-lat'));
+            var lngValue = parseFloat(this.getAttribute('data-lng'));
+            exibirSomenteMarker(id, latValue, lngValue);
+          });
+          tableBody.appendChild(row);
+        }
+
+        // Processa dispositivos T42 (Cadeado)
+        data.t42_devices.forEach(device => {
+          adicionarDispositivo(device, "Cadeado", blueIcon);
+        });
+
+        // Processa dispositivos STC (Isca)
+        data.stc_devices.forEach(device => {
+          adicionarDispositivo(device, "Isca", redIcon);
+        });
+
+        // Adiciona as cercas
+        data.geofences.forEach(fence => {
+          if (!fence.center || !fence.radius) {
+            console.error("❌ ERRO: Cerca inválida", fence);
+            return;
+          }
+          var circle = L.circle(fence.center, {
+            color: 'green',
+            fillColor: '#008000',
+            fillOpacity: 0.3,
+            radius: fence.radius
+          }).addTo(fencesLayer);
+          circle.bindPopup(`<strong>${fence.name}</strong><br>Raio: ${fence.radius / 1000} km`);
+        });
+      })
+      .catch(error => {
+        console.error("❌ ERRO AO ATUALIZAR DADOS:", error);
+      });
+  }
+
+  // Chama atualizarDados ao iniciar
+  atualizarDados();
+  setInterval(atualizarDados, 90000);
+
+  // Se clicar fora de uma linha, restaura todos os marcadores
+  document.addEventListener('click', function(event) {
+    if (!event.target.closest('tr.clickable')) {
+      restaurarMarcadores();
+    }
+  });
+</script>
+{% endblock content %}

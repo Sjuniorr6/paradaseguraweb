@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+{% include "components/components_sidebar.html" %}
+<div class="container mt-5">
+  <h2 class="mb-4 text-center">Consulta Checklist</h2>
+  
+  <!-- Formulário de Filtros -->
+  <form method="GET" class="d-flex flex-wrap align-items-end mb-4">
+    <!-- Embarcador -->
+    <div class="mr-3">
+      <label for="embarcador" class="mb-0">Embarcador</label>
+      <select id="embarcador" name="embarcador" class="form-control">
+        <option value="">-- Selecione --</option>
+        <option value="CORTEVA" {% if request.GET.embarcador == 'CORTEVA' %}selected{% endif %}>CORTEVA</option>
+        <option value="BAYER" {% if request.GET.embarcador == 'BAYER' %}selected{% endif %}>BAYER</option>
+        <option value="COMANDO LOG" {% if request.GET.embarcador == 'COMANDO LOG' %}selected{% endif %}>COMANDO LOG</option>
+        <option value="OUTROS" {% if request.GET.embarcador == 'OUTROS' %}selected{% endif %}>OUTROS</option>
+      </select>
+    </div>
+
+    <!-- Data Início -->
+    <div class="mr-3">
+      <label for="data_inicio" class="mb-0">Data Início</label>
+      <input
+        type="date"
+        class="form-control"
+        id="data_inicio"
+        name="data_inicio"
+        value="{{ request.GET.data_inicio|default_if_none:'' }}"
+      >
+    </div>
+
+    <!-- Data Fim -->
+    <div class="mr-3">
+      <label for="data_fim" class="mb-0">Data Fim</label>
+      <input
+        type="date"
+        class="form-control"
+        id="data_fim"
+        name="data_fim"
+        value="{{ request.GET.data_fim|default_if_none:'' }}"
+      >
+    </div>
+
+    <!-- Mostrar Registros -->
+    <div class="mr-3">
+      <label for="mostrar_registros" class="mb-0">Mostrar</label>
+      <select id="mostrar_registros" name="mostrar_registros" class="form-control">
+        <option value="10" {% if request.GET.mostrar_registros == '10' or not request.GET.mostrar_registros %}selected{% endif %}>10</option>
+        <option value="25" {% if request.GET.mostrar_registros == '25' %}selected{% endif %}>25</option>
+        <option value="50" {% if request.GET.mostrar_registros == '50' %}selected{% endif %}>50</option>
+        <option value="100" {% if request.GET.mostrar_registros == '100' %}selected{% endif %}>100</option>
+      </select>
+    </div>
+
+    <!-- Campo de Busca -->
+    <div class="mr-3">
+      <label for="search" class="mb-0">Procurar</label>
+      <input
+        type="text"
+        class="form-control"
+        id="search"
+        name="search"
+        placeholder="Busca"
+        value="{{ request.GET.search|default_if_none:'' }}"
+      >
+    </div>
+
+    <!-- Botão Buscar -->
+    <div>
+      <button type="submit" class="btn btn-primary">Buscar</button>
+    </div>
+  </form>
+
+  <!-- Botão de Exportação Excel -->
+  <div class="form-row mt-3">
+    <div class="col text-right">
+      <a
+        href="{% url 'excel_export' %}?{{ request.GET.urlencode }}"
+        class="btn btn-success"
+      >
+        Exportar para Excel
+      </a>
+    </div>
+  </div>
+
+  <!-- Tabela de Resultados -->
+  <div class="table-responsive mt-3">
+    <table class="table table-bordered table-hover">
+      <thead class="thead-light">
+        <tr>
+          <th>Embarcador</th>
+          <th>Motorista</th>
+          <th>Placa Cavalo</th>
+          <th>Placa Carreta</th>
+          <th>Data Criação</th>
+          <th>Tipo Parada</th>
+          <th>ID Cadeado</th>
+          <th>Status</th>
+          <th>Saída</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if object_list %}
+          {% for item in object_list %}
+          <tr>
+            <td>{{ item.embarcador }}</td>
+            <td>{{ item.nome_motorista }}</td>
+            <td>{{ item.placa_cavalo }}</td>
+            <td>{{ item.placa_carreta }}</td>
+            <td>{{ item.data_criacao|date:"d/m/Y H:i" }}</td>
+            <td>{{ item.tipo_parada }}</td>
+            <td>{{ item.id_cadeado }}</td>
+            <td>{{ item.status }}</td>
+            <td>
+              {% if item.saida %}
+                {{ item.saida|date:"d/m/Y H:i" }}
+              {% else %}
+                --
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="9" class="text-center">Nenhum registro localizado!</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginação -->
+  {% if is_paginated %}
+    <nav>
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}" aria-label="Anterior">
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        {% endif %}
+        {% for i in paginator.page_range %}
+          {% if page_obj.number == i %}
+            <li class="page-item active">
+              <a class="page-link" href="#">{{ i }}</a>
+            </li>
+          {% else %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ i }}&{{ request.GET.urlencode }}">{{ i }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}" aria-label="Próximo">
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}

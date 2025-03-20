@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title">Detalhes da Parada Segura</h2>
+            <h5 class="card-subtitle mb-3">{{ parada.embarcador }}</h5>
+
+            <p><strong>ID:</strong> {{ parada.id }}</p>
+            <p><strong>Transportador:</strong> {{ parada.transportador }}</p>
+            <p><strong>Nome do Motorista:</strong> {{ parada.nome_motorista }}</p>
+            <p><strong>Placa Cavalo:</strong> {{ parada.placa_cavalo }}</p>
+            <p><strong>Placa Carreta:</strong> {{ parada.placa_carreta }}</p>
+            <p><strong>Nome do Posto:</strong> {{ parada.get_tipo_posto_display }}</p>
+            <p><strong>Iscas:</strong> {{ parada.id_rastreador }}</p>
+            <p><strong>Cadeados:</strong> {{ parada.id_cadeado }}</p>
+            <p><strong>Data de Criação:</strong> {{ parada.data_criacao|date:"d/m/Y" }}</p>
+
+            {% if parada.foto_cavalo %}
+                <img src="{{ parada.foto_cavalo.url }}" alt="Foto do Cavalo" class="img-thumbnail" >
+            {% else %}
+                <p>Sem imagem disponível</p>
+            {% endif %}
+
+            {% if parada.foto_documento_cavalo %}
+                <img src="{{ parada.foto_documento_cavalo.url }}" alt="Foto do documento do cavalo" class="img-thumbnail" >
+            {% else %}
+                <p>Sem imagem disponível</p>
+            {% endif %}
+
+            {% if parada.foto_carreta %}
+                <img src="{{ parada.foto_carreta.url }}" alt="Foto da Carreta" class="img-thumbnail">
+            {% else %}
+                <p>Sem imagem disponível</p>
+            {% endif %}
+
+            {% if parada.foto_carreta_documento %}
+                <img src="{{ parada.foto_carreta_documento.url }}" alt="Foto do Documento da Carreta" class="img-thumbnail">
+            {% else %}
+                <p>Sem imagem disponível</p>
+            {% endif %}
+
+            {% if parada.cnh %}
+                <img src="{{ parada.cnh.url }}" alt="CNH" class="img-thumbnail" >
+            {% else %}
+                <p>Sem imagem disponível</p>
+            {% endif %}
+            
+            <a href="{% url 'paradaseguralist2' %}" class="btn btn-secondary mt-3">Voltar para a Lista</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

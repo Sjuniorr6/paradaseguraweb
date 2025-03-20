@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Passagem de Serviço{% endblock %}
+
+{% block content %}
+{% include "components/components_sidebar.html" %}
+
+<!-- Contêiner que controla a rolagem -->
+<div style="max-height: 80vh; overflow-y: auto;">
+    
+    <!-- Imagem no topo, dentro do contêiner rolável -->
+    <div class="text-center mb-4">
+        <img src="{% static 'images/backgrownd.png' %}" 
+             alt="Imagem de fundo" 
+             style="max-width: 150px;">
+    </div>
+
+    <h3>Passagem de Serviço</h3>
+    <div class="card">
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <!-- 1) Nome do PA -->
+                <div class="mb-2" style="display: flex; align-items: center;">
+                    <label for="id_nome_do_pa" style="width: 120px; margin-right: 10px;">
+                        Nome do PA
+                    </label>
+                    <div style="flex: 1;">
+                        {{ form.nome_do_pa }}
+                    </div>
+                </div>
+
+                <!-- 2) Nome do Posto -->
+                <div class="mb-2" style="display: flex; align-items: center;">
+                    <label for="id_nome_do_posto" style="width: 120px; margin-right: 10px;">
+                        Nome do Posto
+                    </label>
+                    <div style="flex: 1;">
+                        {{ form.nome_do_posto }}
+                    </div>
+                </div>
+
+                <!-- 3) Turno -->
+                <div class="mb-2" style="display: flex; align-items: center;">
+                    <label for="id_turno" style="width: 120px; margin-right: 10px;">
+                        Turno
+                    </label>
+                    <div style="flex: 1;">
+                        {{ form.turno }}
+                    </div>
+                </div>
+
+                <!-- 4) Iscas -->
+                <div class="mb-2" style="display: flex; align-items: center;">
+                    <label for="id_Iscas" style="width: 120px; margin-right: 10px;">
+                        Iscas
+                    </label>
+                    <div style="flex: 1;">
+                        {{ form.Iscas }}
+                    </div>
+                </div>
+
+                <!-- 5) Notebook -->
+                <div class="mb-2" style="display: flex; align-items: center;">
+                    <label for="id_notebook" style="width: 120px; margin-right: 10px;">
+                        Notebook
+                    </label>
+                    <div style="flex: 1;">
+                        {{ form.notebook }}
+                    </div>
+                </div>
+
+                <!-- 6) Celular -->
+                <div class="mb-2" style="display: flex; align-items: center;">
+                    <label for="id_celular" style="width: 120px; margin-right: 10px;">
+                        Celular
+                    </label>
+                    <div style="flex: 1;">
+                        {{ form.celular }}
+                    </div>
+                </div>
+
+                <!-- 7) Antena -->
+                <div class="mb-2" style="display: flex; align-items: center;">
+                    <label for="id_antena" style="width: 120px; margin-right: 10px;">
+                        Antena
+                    </label>
+                    <div style="flex: 1;">
+                        {{ form.antena }}
+                    </div>
+                </div>
+
+                <!-- 8) Bodycam -->
+                <div class="mb-2" style="display: flex; align-items: center;">
+                    <label for="id_bodycam" style="width: 120px; margin-right: 10px;">
+                        Bodycam
+                    </label>
+                    <div style="flex: 1;">
+                        {{ form.bodycam }}
+                    </div>
+                </div>
+
+                <!-- 9) Cadeados -->
+                <div class="mb-2" style="display: flex; align-items: center;">
+                    <label for="id_cadeados" style="width: 120px; margin-right: 10px;">
+                        Cadeados
+                    </label>
+                    <div style="flex: 1;">
+                        {{ form.cadeados }}
+                    </div>
+                </div>
+
+                <!-- 10) Drone -->
+                <div class="mb-2" style="display: flex; align-items: center;">
+                    <label for="id_drone" style="width: 120px; margin-right: 10px;">
+                        Drone
+                    </label>
+                    <div style="flex: 1;">
+                        {{ form.drone }}
+                    </div>
+                </div>
+
+                <!-- 11) Descrição -->
+                <div class="mb-2" style="display: flex; align-items: center;">
+                    <label for="id_descrição" style="width: 120px; margin-right: 10px;">
+                        Descrição
+                    </label>
+                    <div style="flex: 1;">
+                        {{ form.descrição }}
+                    </div>
+                </div>
+
+                <!-- 12) Fotos -->
+                <div class="mb-2" style="display: flex; align-items: center;">
+                    <label for="id_fotos" style="width: 120px; margin-right: 10px;">
+                        Fotos
+                    </label>
+                    <div style="flex: 1;">
+                        {{ form.fotos }}
+                    </div>
+                </div>
+
+                <!-- Botão de Salvar -->
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tipoPostoField = document.querySelector('select[name="nome_do_posto"]');
+        const nomeDoPAField = document.querySelector('select[name="nome_do_pa"]');
+
+        tipoPostoField.addEventListener('change', function() {
+            const posto = tipoPostoField.value;
+
+            // Limpar opções anteriores
+            nomeDoPAField.innerHTML = '<option value="">Selecione uma PA</option>';
+
+            // Obter PAs com base no posto
+            fetch("{% url 'get_pa_choices' %}?tipo_posto=" + posto)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.pa && data.pa.length > 0) {
+                        data.pa.forEach(pa => {
+                            const option = document.createElement('option');
+                            option.value = pa[0];
+                            option.text = pa[1];
+                            nomeDoPAField.appendChild(option);
+                        });
+                    } else {
+                        console.warn('Nenhuma PA encontrada para este posto.');
+                    }
+                })
+                .catch(error => console.error('Erro ao buscar PAs:', error));
+        });
+    });
+</script>
+{% endblock %}

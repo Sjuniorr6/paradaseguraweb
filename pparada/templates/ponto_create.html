@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    Upload de Imagem
+{% endblock title %}
+
+{% block content %}
+<!-- Contêiner principal com rolagem vertical limitada -->
+{% include "components/components_sidebar.html" %}
+<div class="container my-4 text-break" style="max-height: 80vh; overflow-y: auto; overflow-wrap: break-word; word-break: break-all;">
+    <!-- Imagem no topo -->
+    <div class="text-center mb-4">
+        <img src="{% static 'images/backgrownd.png' %}"
+             alt="Imagem de fundo"
+             style="max-width: 150px;">
+    </div>
+
+    <!-- Formulário de upload -->
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <!-- Card com sombra -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">Enviar foto</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {{ form.as_p }}
+                            <button type="submit" class="btn btn-success mt-3 w-100">
+                                <i class="bi bi-upload"></i> Salvar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock content %}

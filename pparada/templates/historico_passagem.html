@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+{% include "components/components_sidebar.html" %}
+
+<!-- Contêiner principal com rolagem e margem -->
+<div class="container my-4" style="max-height: 80vh; overflow-y: auto;">
+
+    <div class="text-center mb-4">
+        <img src="{% static 'images/backgrownd.png' %}" 
+             alt="Imagem de fundo" 
+             style="max-width: 150px;">
+    </div>
+  
+    <h2 class="text-center mb-4">Histórico de Passagens</h2>
+
+    <div class="row justify-content-center">
+        {% for item in passagens %}
+            <div class="col-12 col-md-8 mb-3">
+                <!-- Card centralizado -->
+                <div class="card text-center shadow">
+                    <div class="card-body">
+                        <!-- Título do Card -->
+                        <h5 class="card-title">
+                            {{ item.nome_do_pa}} - {{ item.nome_do_posto }}
+                        </h5>
+                        <!-- Subtítulo -->
+                        <h6 class="card-subtitle text-muted mb-2">
+                            Turno: {{ item.turno }} 
+                            &nbsp;|&nbsp; Criado em: {{ item.data_criacao|date:"d/m/Y H:i" }}
+                        </h6>
+
+                        <!-- Corpo do Card: campos adicionais -->
+                        <p class="mt-2 mb-1">
+                            <strong>Iscas:</strong> {{ item.Iscas }} <br>
+                            <strong>Notebook:</strong> {{ item.notebook }} <br>
+                            <strong>Celular:</strong> {{ item.celular }} <br>
+                            <strong>Antena:</strong> {{ item.antena }} <br>
+                            <strong>Bodycam:</strong> {{ item.bodycam }} <br>
+                            <strong>Cadeados:</strong> {{ item.cadeados }} <br>
+                            <strong>Drone:</strong> {{ item.drone }}
+                        </p>
+
+                        <p class="mb-1">
+                            <strong>Descrição:</strong> {{ item.descrição }}
+                        </p>
+
+                        <!-- Fotos -->
+                        <p class="mb-0">
+                            <strong>Fotos:</strong>
+                            {% if item.fotos %}
+                                <a href="{{ item.fotos.url }}" target="_blank">
+                                    <img src="{{ item.fotos.url }}" alt="Foto" style="max-width: 100px;" />
+                                </a>
+                            {% else %}
+                                Sem foto
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12 text-center">
+                <p>Nenhuma passagem encontrada.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Paginação centralizada -->
+    <div class="pagination mt-4 text-center">
+        <span class="step-links">
+            {% if passagens.has_previous %}
+                <a href="?page=1">&laquo; primeira</a>
+                <a href="?page={{ passagens.previous_page_number }}">anterior</a>
+            {% endif %}
+
+            {% if passagens.has_next %}
+                <a href="?page={{ passagens.next_page_number }}">próxima</a>
+                <a href="?page={{ passagens.paginator.num_pages }}">última &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
+    {% include 'components/_pagination.html' %}
+</div>
+{% endblock %}

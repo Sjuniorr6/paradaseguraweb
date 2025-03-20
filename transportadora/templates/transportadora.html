@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+{% include "components/components_sidebar.html" %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+  <!-- Card com sombra -->
+  <div class="card shadow" style="max-width: 500px; width: 100%;">
+    <div class="card-header bg-primary text-white">
+      <h2 class="mb-0">Cadastrar Transportadora</h2>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-success w-100">Salvar</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

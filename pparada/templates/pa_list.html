@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+{% include "components/components_sidebar.html" %}
+<div class="container my-4" style="max-height: 80vh; overflow-y: auto;">
+    
+    <div class="text-center mb-4">
+        <img src="{% static 'images/backgrownd.png' %}" 
+             alt="Imagem de fundo" 
+             style="max-width: 150px;">
+    </div>
+    <h2 class="text-center mb-4">Lista de Paradas Seguras</h2>
+    <!-- Formulário de Filtro por Embarcador -->
+    <form method="get" action="." class="mb-4">
+        <div class="form-group row justify-content-center">
+            <label for="embarcador" class="col-sm-2 col-form-label text-right text-white">Pesquisar por Embarcador:</label>
+            <div class="col-sm-6">
+                <input 
+                    type="text"
+                    name="embarcador"
+                    id="embarcador"
+                    class="form-control"
+                    placeholder="Digite o nome do embarcador"
+                    value="{{ request.GET.embarcador }}"
+                >
+            </div>
+            <div class="col-sm-2">
+                <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+            </div>
+        </div>
+        <div class="row justify-content-center mt-2">
+            <div class="col-sm-2 text-center">
+                <a href="{% url 'paradaseguralist' %}" class="btn btn-secondary w-100">Limpar Filtros</a>
+            </div>
+        </div>
+    </form>
+  
+
+    <!-- Cards para Exibir a Lista de Paradas -->
+    <div class="row justify-content-center">
+        {% for item in pa %}
+        <div class="col-12 col-md-6 col-lg-4 mb-4 d-flex align-items-stretch">
+            <div class="card w-100 text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ item.embarcador }}</h5>
+                    <p><strong>ID:</strong> {{ item.id }}</p>
+                    <p><strong>Transportador:</strong> {{ item.transportador }}</p>
+                    <p><strong>Nome do Motorista:</strong> {{ item.nome_motorista }}</p>
+                    <p><strong>Placa Cavalo:</strong> {{ item.placa_cavalo }}</p>
+                    <p><strong>Placa Carreta:</strong> {{ item.placa_carreta }}</p>
+                    <p><strong>Nome do Posto:</strong> {{ item.get_tipo_posto_display }}</p>
+                    <p><strong>Iscas:</strong> {{ item.id_rastreador }}</p>
+                    <p><strong>Cadeados:</strong> {{ item.id_cadeado }}</p>
+                    <p><strong>Data de Criação:</strong> {{ item.data_criacao|date:"d/m/Y" }}</p>
+                    <p><strong>Status:</strong> {{ item.status }}</p>
+
+                    <!-- Exibir Saída apenas se o Status for 'EM VIAGEM' -->
+                    {% if item.status == "EM VIAGEM" %}
+                    <p><strong>Data/Hora de Saída:</strong> {{ item.saida|date:"d/m/Y H:i:s" }}</p>
+                    {% endif %}
+
+                    <!-- Botões de Ação -->
+                    <a href="{% url 'ParadaDetailView' item.id %}" class="btn btn-primary mb-2">Visualizar</a>
+                    <a href="{% url 'registrar_saida' item.id %}" class="btn btn-info mb-2">Registrar Saida</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center">
+            <p>Nenhuma parada encontrada.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% include 'components/_pagination.html' %}
+</div>
+{% endblock %}
