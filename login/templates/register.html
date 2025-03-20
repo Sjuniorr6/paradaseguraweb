@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container my-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+  <div class="card shadow-sm" style="max-width: 400px; width: 100%; background: rgba(0, 0, 0, 0.8);">
+    <div class="card-header text-center" style="background: rgba(0, 0, 0, 0.9); color: #fff;">
+      <h2 class="mb-0">Registrar-se</h2>
+    </div>
+    <div class="card-body" style="color: #fff;">
+      <div class="text-center mb-4">
+        <img src="{% static 'images/backgrownd.png' %}" alt="Imagem de fundo" class="img-fluid" style="max-width: 150px;">
+      </div>
+      
+      {% if form.errors %}
+      <div class="alert alert-danger">
+        Por favor, corrija os erros abaixo.
+      </div>
+      {% endif %}
+      
+      <form method="post">
+        {% csrf_token %}
+        <!-- Renderização campo a campo para customização -->
+        <div class="mb-3">
+          {{ form.username.label_tag }}
+          {{ form.username }}
+          {% if form.username.errors %}
+          <div class="text-danger">{{ form.username.errors }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Novo campo para selecionar o tipo de usuário -->
+        <div class="mb-3">
+          {{ form.user_type.label_tag }}
+          {{ form.user_type }}
+          {% if form.user_type.errors %}
+          <div class="text-danger">{{ form.user_type.errors }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          {{ form.password1.label_tag }}
+          {{ form.password1 }}
+          {% if form.password1.errors %}
+          <div class="text-danger">{{ form.password1.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="mb-3">
+          {{ form.password2.label_tag }}
+          {{ form.password2 }}
+          {% if form.password2.errors %}
+          <div class="text-danger">{{ form.password2.errors }}</div>
+          {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Registrar</button>
+      </form>
+      
+      <div class="text-center mt-3">
+        <small>Já tem uma conta? <a href="{% url 'login' %}" class="text-decoration-underline text-white">Faça login</a></small>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

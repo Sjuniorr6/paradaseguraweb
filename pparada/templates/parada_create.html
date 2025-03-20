@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Passagem de Serviço{% endblock %}
+
+{% block content %}
+{% include "components/components_sidebar.html" %}
+
+<div class="container my-4" style="max-height: 80vh; overflow-y: auto;">
+  <div class="text-center mb-4">
+    <img src="{% static 'images/backgrownd.png' %}" alt="Imagem de fundo" style="max-width: 150px;">
+  </div>
+  <div class="card">
+    <div class="card-body form-container">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    .form-container {
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 15px;
+    }
+    form p { margin-bottom: 15px; }
+    form label { font-weight: bold; display: block; margin-bottom: 5px; }
+    form input, form select, form textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .form-label { width: 120px; margin-right: 10px; }
+    .form-group { display: flex; align-items: center; margin-bottom: 10px; }
+    @media (max-width: 768px) {
+      form input, form select, form textarea { font-size: 14px; padding: 8px; }
+      .card { margin: 10px; }
+    }
+  </style>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Conjuntos para armazenar os IDs de rastreador e cadeado em registros sem saída
+      const blockedRastreador = new Set();
+      const blockedCadeado = new Set();
+
+      // Função para carregar os registros da API e identificar os bloqueados
+      function loadBlockedRecords() {
+        fetch("/api/paradasegura/")
+          .then(response => response.json())
+          .then(data => {
+            data.forEach(record => {
+              // Registro sem saída se "saida" estiver vazio ou nulo
+              if (!record.saida || record.saida.trim() === "") {
+                if (record.id_rastreador) blockedRastreador.add(record.id_rastreador);
+                if (record.id_cadeado) blockedCadeado.add(record.id_cadeado);
+              }
+            });
+            removeBlockedOptions();
+          })
+          .catch(error => console.error("Erro ao carregar registros:", error));
+      }
+
+      // Função para remover as opções bloqueadas dos selects
+      function removeBlockedOptions() {
+        const rastreadorSelect = document.querySelector('select[name="id_rastreador"]');
+        const cadeadoSelect = document.querySelector('select[name="id_cadeado"]');
+
+        if (rastreadorSelect) {
+          Array.from(rastreadorSelect.options).forEach(option => {
+            if (blockedRastreador.has(option.value)) {
+              option.remove();
+            }
+          });
+        }
+        if (cadeadoSelect) {
+          Array.from(cadeadoSelect.options).forEach(option => {
+            if (blockedCadeado.has(option.value)) {
+              option.remove();
+            }
+          });
+        }
+      }
+
+      // Carrega os registros "bloqueados" na carga inicial
+      loadBlockedRecords();
+
+      // Lógica para atualização dinâmica dos selects com base no "tipo_posto"
+      const tipoPostoField = document.querySelector('select[name="tipo_posto"]');
+      const nomeDoPAField = document.querySelector('select[name="nome_do_pa"]');
+      const idCadeadoField = document.querySelector('select[name="id_cadeado"]');
+      const idRastreadorField = document.querySelector('select[name="id_rastreador"]');
+
+      if (tipoPostoField) {
+        tipoPostoField.addEventListener('change', function() {
+          const posto = tipoPostoField.value;
+
+          if (nomeDoPAField)
+            nomeDoPAField.innerHTML = '<option value="">Selecione uma PA</option>';
+          if (idCadeadoField)
+            idCadeadoField.innerHTML = '<option value="">Selecione um Cadeado</option>';
+          if (idRastreadorField)
+            idRastreadorField.innerHTML = '<option value="">Selecione um Rastreador</option>';
+
+          fetch("{% url 'get_choices' %}?tipo_posto=" + posto)
+            .then(response => response.json())
+            .then(data => {
+              if (data.pa && data.pa.length > 0) {
+                data.pa.forEach(pa => {
+                  const option = document.createElement('option');
+                  option.value = pa[0];
+                  option.text = pa[1];
+                  nomeDoPAField.appendChild(option);
+                });
+              } else {
+                console.warn('Nenhuma PA encontrada para este posto.');
+              }
+
+              if (data.cadeados && data.cadeados.length > 0) {
+                data.cadeados.forEach(cadeado => {
+                  const option = document.createElement('option');
+                  option.value = cadeado[0];
+                  option.text = cadeado[1];
+                  idCadeadoField.appendChild(option);
+                });
+              } else {
+                console.warn('Nenhum Cadeado encontrado para este posto.');
+              }
+
+              if (data.iscas && data.iscas.length > 0) {
+                data.iscas.forEach(isca => {
+                  const option = document.createElement('option');
+                  option.value = isca[0];
+                  option.text = isca[1];
+                  idRastreadorField.appendChild(option);
+                });
+              } else {
+                console.warn('Nenhum Rastreador encontrado para este posto.');
+              }
+              // Após repopular os selects, remove as opções bloqueadas
+              removeBlockedOptions();
+            })
+            .catch(error => console.error("Erro ao buscar dados:", error));
+        });
+      }
+
+      // Lógica para o campo "Embarcador" e criação do container "Outros Embarcador"
+      const embarcadorField = document.querySelector('select[name="embarcador"]');
+      let outrosContainer = document.getElementById('outros-embarcador-container');
+      if (!outrosContainer && embarcadorField) {
+        outrosContainer = document.createElement('div');
+        outrosContainer.id = 'outros-embarcador-container';
+        outrosContainer.style.display = 'none';
+        outrosContainer.classList.add('form-group');
+
+        const label = document.createElement('label');
+        label.setAttribute('for', 'id_outros_embarcador');
+        label.classList.add('form-label');
+        label.textContent = 'Outros Embarcador';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.name = 'outros_embarcador';
+        input.id = 'id_outros_embarcador';
+        input.classList.add('form-control');
+
+        outrosContainer.appendChild(label);
+        outrosContainer.appendChild(input);
+
+        embarcadorField.parentNode.parentNode.insertAdjacentElement('afterend', outrosContainer);
+      }
+
+      function toggleOutrosEmbarcador() {
+        if (embarcadorField && embarcadorField.value === "OUTROS") {
+          outrosContainer.style.display = 'flex';
+        } else if (outrosContainer) {
+          outrosContainer.style.display = 'none';
+        }
+      }
+      if (embarcadorField) {
+        toggleOutrosEmbarcador();
+        embarcadorField.addEventListener('change', toggleOutrosEmbarcador);
+      }
+    });
+  </script>
+</div>
+{% endblock %}

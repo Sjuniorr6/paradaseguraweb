@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- Inclui a Sidebar/Navbar Responsiva -->
+{% include "components/components_sidebar.html" %}
+
+<div class="container d-flex flex-column justify-content-center align-items-center" style="min-height: 100vh; text-align: center;">
+  <div class="bg-dark bg-opacity-75 p-4 rounded shadow text-white" style="max-width: 400px;">
+    <h1 class="mb-3">Bem-vindo, {{ user.username }}</h1>
+    <p></p>
+
+    <!-- Botão de Logout com POST -->
+    <form action="{% url 'logout' %}" method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger w-100">ALERTA</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

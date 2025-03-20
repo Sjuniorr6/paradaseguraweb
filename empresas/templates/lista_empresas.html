@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+{% include "components/components_sidebar.html" %}
+
+<div class="container mt-5">
+  <h2>Lista de Empresas</h2>
+
+  <div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Tipo Empresa</th>
+          <th>Tipo Pessoa</th>
+          <th>Razão Social</th>
+          <th>Nome Fantasia</th>
+          <th>CNPJ</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in empresa %}
+        <tr>
+          <td>{{ item.id }}</td>
+          <td>{{ item.tipoempresa }}</td>
+          <td>{{ item.tipopessoa }}</td>
+          <td>{{ item.razaosocial }}</td>
+          <td>{{ item.nomefantasia }}</td>
+          <td>{{ item.cnpj }}</td>
+          <td>
+            <!-- Botão que abre o modal (Bootstrap 5) -->
+            <button class="btn btn-danger btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalExcluir{{ item.id }}">
+              Excluir
+            </button>
+            
+            <!-- Modal de confirmação (Bootstrap 5) -->
+            <div class="modal fade"
+                 id="modalExcluir{{ item.id }}"
+                 tabindex="-1"
+                 aria-labelledby="modalExcluirLabel{{ item.id }}"
+                 aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="modalExcluirLabel{{ item.id }}">
+                      Excluir Empresa
+                    </h5>
+                    <!-- Botão de fechar (Bootstrap 5) -->
+                    <button type="button" 
+                            class="btn-close" 
+                            data-bs-dismiss="modal" 
+                            aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p>Tem certeza que deseja excluir a empresa 
+                       <strong>"{{ item.nomefantasia }}"</strong>?
+                    </p>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                      Cancelar
+                    </button>
+                    <!-- Formulário de exclusão -->
+                    <form action="{% url 'empresa_delete' item.pk %}"
+                          method="post"
+                          class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger">
+                        Excluir
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Fim do modal -->
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock content %}

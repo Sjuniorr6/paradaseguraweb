@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "components/components_sidebar.html" %}
+
+<div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+    <h1 style="text-align: center; margin-bottom: 20px;">Lista de Viagens com Último Evento</h1>
+
+    {# Se houver erro, exibe a mensagem de erro #}
+    {% if error %}
+        <p style="color: red; font-weight: bold;">{{ error }}</p>
+    {% else %}
+        {# Se existir a lista de viagens e ela não estiver vazia #}
+        {% if viagens and viagens|length > 0 %}
+            <!-- DIV que "envolve" a tabela -->
+            <div style="background-color: #fff; padding: 15px; border-radius: 4px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Cód. Viagem</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Último ID Evento</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Tipo Evento</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Descrição</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Placa</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Data Bordo</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Data Cadastro</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for viagem in viagens %}
+                            {# Só exibe se tiver pelo menos 1 evento e um viag_codigo válido #}
+                            {% if viagem.eventos and viagem.eventos|length > 0 and viagem.valor_frete and viagem.valor_frete.0 %}
+                                {% with viagem.valor_frete.0.viag_codigo as cod_viagem %}
+                                    {# Pega o último evento da lista #}
+                                    {% with viagem.eventos|last as ultimo_evento %}
+                                        <tr>
+                                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                                {{ cod_viagem }}
+                                            </td>
+                                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                                {{ ultimo_evento.id_evento }}
+                                            </td>
+                                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                                {{ ultimo_evento.tipo_evento }}
+                                            </td>
+                                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                                {{ ultimo_evento.descricao }}
+                                            </td>
+                                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                                {{ ultimo_evento.placa }}
+                                            </td>
+                                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                                {{ ultimo_evento.data_bordo }}
+                                            </td>
+                                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                                {{ ultimo_evento.data_cadastro }}
+                                            </td>
+                                        </tr>
+                                    {% endwith %}
+                                {% endwith %}
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>Nenhuma viagem encontrada.</p>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
