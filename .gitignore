@@ -1,3 +1,6 @@
 venv/
 env/
 .venv/pi
+db.sqlite3
+login.gif
+login1.gif
