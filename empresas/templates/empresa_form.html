@@ -2,12 +2,86 @@
 
 {% block content %}
 {% include "components/components_sidebar.html" %}
-<div class="container mt-5">
+
+<style>
+  /* Diminuir espaço acima e aumentar largura do container */
+  .container {
+    margin-top: 0px;      /* menos espaço superior */
+    max-width: 95%;        /* ocupa até 95% da tela */
+    width: auto;
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+
+  /* Card personalizado */
+  .card {
+    border-radius: 10px;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
+  }
+
+  /* Header do card: degradê dourado */
+  .card-header {
+    background: linear-gradient(160deg, #8F7239, #8F7239);
+    text-align: center;
+  }
+
+  .card-header h2,
+  .card-header h4 {
+    font-size: 22px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  /* Inputs do formulário */
+  .card-body input[type="text"],
+  .card-body input[type="email"],
+  .card-body select,
+  .card-body textarea {
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+    padding: 10px;
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  .card-body label {
+    font-weight: 500;
+    color: #495057;
+  }
+
+  /* Botão estilizado */
+  .btn-success {
+    background-color: #198754;
+    border-color: #157347;
+    padding: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+
+  .btn-success:hover {
+    background-color: #157347;
+    border-color: #146c43;
+    transform: translateY(-2px);
+  }
+
+  /* Responsividade */
+  @media (max-width: 768px) {
+    .card {
+      width: 90%;
+      margin: auto;
+    }
+  }
+</style>
+
+<div class="container">
   <div class="row justify-content-center">
     <div class="col-md-6">
       <!-- Card para o formulário -->
       <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header">
           <h4 class="card-title mb-0">Criar Empresa</h4>
         </div>
         <div class="card-body">

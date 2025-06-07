@@ -1,51 +1,150 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block extra_css %}
+  <!-- Se você tiver um bloco para CSS extra, boa prática colocar aqui -->
+  <style>
+    /* Seu CSS original */
+    /* Menos espaço acima */
+    body {
+      margin-top: -70px !important;
+    }
+
+    /* Contêiner ajusta-se ao conteúdo */
+    .container-fluid {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin: 10px auto 20px;   /* topo 10px, auto esquerda/direita, 20px embaixo */
+      max-width: 98%;
+      width: auto;
+    }
+
+    h2 {
+      font-weight: 600;
+      color: #34495e;
+      border-bottom: 3px solid #F1C46B;
+      display: inline-block;
+      margin-bottom: 25px !important;
+      padding-bottom: 8px;
+      text-align: center;
+      width: 100%;
+    }
+
+    form label {
+      font-weight: 500;
+      margin-bottom: 5px;
+    }
+    form .form-control {
+      border-radius: 4px;
+      border: 1px solid #ced4da;
+      height: 38px;
+    }
+    form button.btn-primary,
+    form .btn-secondary {
+      height: 38px;
+      padding: 5px 10px;
+    }
+
+    /* Tabela mais compacta */
+    .table {
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    .table thead {
+      background-color: #007bff;
+      color: #ffffff;
+    }
+    .table th, .table td {
+      vertical-align: middle;
+      text-align: center;
+      padding: 8px;
+    }
+    .table tbody tr:hover {
+      background-color: #f1f9ff;
+    }
+    .table .btn-sm {
+      padding: 3px 8px;
+      font-size: 13px;
+    }
+
+    /* Modal compacto */
+    .modal-dialog {
+      max-width: 450px;
+    }
+    .modal-header, .modal-footer {
+      padding: 10px 15px;
+    }
+    .modal-body {
+      padding: 15px;
+      font-size: 14px;
+    }
+
+    /* Paginação compacta */
+    .pagination {
+      margin-top: 15px;
+    }
+    .pagination .page-link {
+      padding: 5px 10px;
+      font-size: 14px;
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .container-fluid {
+        padding: 10px;
+        margin: 10px auto 20px;
+      }
+      form .row {
+        flex-direction: column;
+      }
+      form .row .col-sm-2,
+      form .row .col-sm-6 {
+        width: 100%;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      form button, form .btn-secondary {
+        width: 100%;
+      }
+    }
+
+  </style>
+{% endblock extra_css %}
+
+
 {% block content %}
-{% include "components/components_sidebar.html" %}
+  {% include "components/components_sidebar.html" %}
 
-<!-- Contêiner principal ocupando a tela toda -->
-<div class="container-fluid py-4" style="min-height: 100vh; overflow-y: auto;">
+  <div class="container-fluid">
+    <h2 class="text-center">Histórico de Paradas</h2>
 
-    <div class="text-center mb-4">
-        <img src="{% static 'images/backgrownd.png' %}" 
-             alt="Imagem de fundo" 
-             style="max-width: 150px;">
-    </div>
-
-    <h2 class="text-center mb-4">Histórico de Paradas</h2>
-
-    <!-- Formulário de Filtro por Embarcador -->
+    <!-- Filtro por Embarcador -->
     <form method="get" action="." class="mb-4">
-        <div class="row justify-content-center">
-            <label for="embarcador" class="col-sm-2 col-form-label text-right">
-                Pesquisar por Embarcador:
-            </label>
-            <div class="col-sm-6">
-                <input
-                    type="text"
-                    name="embarcador"
-                    id="embarcador"
-                    class="form-control"
-                    placeholder="Digite o nome do embarcador"
-                    value="{{ request.GET.embarcador }}"
-                />
-            </div>
-            <div class="col-sm-2">
-                <button type="submit" class="btn btn-primary w-100">Filtrar</button>
-            </div>
+      <div class="row justify-content-center">
+        <label for="embarcador" class="col-sm-2 col-form-label text-right">
+          Pesquisar por Embarcador:
+        </label>
+        <div class="col-sm-6">
+          <input
+            type="text"
+            name="embarcador"
+            id="embarcador"
+            class="form-control"
+            placeholder="Digite o nome do embarcador"
+            value="{{ request.GET.embarcador }}"
+          />
         </div>
-        <!-- Botão Limpar Filtros -->
-        <div class="row justify-content-center mt-2">
-            <div class="col-sm-2 text-center">
-                <a href="{% url 'historico_parada' %}" class="btn btn-secondary w-100">Limpar Filtros</a>
-            </div>
+        <div class="col-sm-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm w-100">Filtrar</button>
+          <a href="{% url 'historico_parada' %}" class="btn btn-outline-secondary btn-sm w-100">Limpar Filtros</a>
         </div>
+      </div>
     </form>
 
-
-
-    <!-- Tabela para Exibir a Lista de Paradas -->
+    <!-- Tabela de Paradas -->
     <div class="table-responsive">
       <table class="table table-striped table-hover align-middle">
         <thead>
@@ -86,60 +185,34 @@
                 -
               {% endif %}
             </td>
-            <td>
-              <!-- Botão Visualizar -->
-              <a href="{% url 'Parada2DetailView' item.id %}" class="btn btn-primary btn-sm mb-1">
-                Visualizar
-              </a>
-
-              <!-- Botão que abre o modal de exclusão -->
-              <button class="btn btn-danger btn-sm"
-                      data-bs-toggle="modal"
-                      data-bs-target="#modalExcluir{{ item.id }}">
-                Excluir
-              </button>
-
-              <!-- Modal de confirmação de exclusão (Bootstrap 5) -->
-              <div class="modal fade"
-                   id="modalExcluir{{ item.id }}"
-                   tabindex="-1"
-                   aria-labelledby="modalExcluirLabel{{ item.id }}"
-                   aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                  <div class="modal-content">
-                    <div class="modal-header bg-danger text-white">
-                      <h5 class="modal-title" id="modalExcluirLabel{{ item.id }}">
-                        Excluir Parada
-                      </h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                    </div>
-                    <div class="modal-body">
-                      <p>Tem certeza que deseja excluir a parada
-                         <strong>#{{ item.id }}</strong> ({{ item.embarcador }})?
-                      </p>
-                    </div>
-                    <div class="modal-footer">
-                      <button type="button"
-                              class="btn btn-secondary"
-                              data-bs-dismiss="modal">
-                        Cancelar
-                      </button>
-                      <!-- Formulário de exclusão -->
-                      <form action="{% url 'parada_delete' item.id %}"
-                            method="post"
-                            class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">
-                          Excluir
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                </div>
+            <td class="text-center">
+              <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <a href="{% url 'Parada2DetailView' item.id %}" class="btn btn-primary btn-sm">Visualizar</a>
+                <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalExcluir{{ item.id }}">Excluir</button>
               </div>
-              <!-- Fim do modal -->
             </td>
           </tr>
+          <!-- Modal de exclusão -->
+          <div class="modal fade" id="modalExcluir{{ item.id }}" tabindex="-1" aria-labelledby="modalExcluirLabel{{ item.id }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                  <h5 class="modal-title" id="modalExcluirLabel{{ item.id }}">Excluir Parada</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                  <p>Tem certeza que deseja excluir a parada <strong>#{{ item.id }}</strong> ({{ item.embarcador }})?</p>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <form action="{% url 'parada_delete' item.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
           {% empty %}
           <tr>
             <td colspan="13" class="text-center">Nenhuma parada encontrada.</td>
@@ -149,7 +222,7 @@
       </table>
     </div>
 
-    <!-- Paginação (arquivo _pagination.html) -->
+    <!-- Paginação -->
     {% include 'components/_pagination.html' %}
-</div>
+  </div>
 {% endblock content %}

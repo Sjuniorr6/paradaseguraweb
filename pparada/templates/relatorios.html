@@ -3,7 +3,170 @@
 
 {% block content %}
 {% include "components/components_sidebar.html" %}
-<div class="container mt-5">
+
+<style>
+  /* 1) Reset básico de margens/paddings do html e body */
+  html, body {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 2) Remover margem/padding de algum wrapper pai do base.html,
+     caso ele esteja adicionando espaço extra. Ajuste o seletor se precisar. */
+  #content, .content-wrapper {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 3) Zerar margem do body (garantir que não haja top margin) */
+  body {
+    margin-top: 0 !important;
+  }
+
+  /* 4) Container principal: “empurra” exatamente para baixo da navbar fixa (50px) */
+  .container {
+    background: #ffffff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 25px;
+    margin-top: 80px !important; /* ajuste esse “50px” caso a altura real da sua navbar seja diferente */
+    max-width: 1500px;
+  }
+
+  /* 5) Em telas maiores (desktop), ajuste de largura máxima */
+  @media (min-width: 992px) {
+    .container {
+      max-width: 2000px;
+      /* Se quiser ocupar 100%: max-width: 100%; padding-left: 30px; padding-right: 30px; */
+    }
+  }
+
+  /* 6) Título centralizado e destacado */
+  h2 {
+    font-weight: 600;
+    color: #34495e;
+    border-bottom: 2px solid #F1C46B;
+    display: inline-block;
+    margin-bottom: 25px !important;
+    padding-bottom: 5px;
+  }
+
+  /* 7) Campos de formulário */
+  form .form-control,
+  form select {
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+  }
+
+  form label {
+    color: #495057;
+    font-weight: 500;
+  }
+
+  /* 8) Botão Buscar */
+  form button.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    transition: background-color 0.3s ease;
+  }
+  form button.btn-primary:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+  }
+
+  /* 9) Botão Exportar para Excel */
+  a.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+    transition: all 0.3s ease;
+  }
+  a.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+  }
+
+  /* 10) Estilo da tabela */
+  .table {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .table thead {
+    background-color: #007bff;
+    color: #ffffff;
+  }
+  .table th,
+  .table td {
+    vertical-align: middle;
+    text-align: center;
+  }
+  .table tbody tr:hover {
+    background-color: #f1f9ff;
+  }
+  .table tbody td {
+    color: #555;
+  }
+
+  /* 11) Paginação estilizada */
+  .pagination {
+    margin-top: 25px;
+  }
+  .pagination .page-link {
+    color: #007bff;
+    border-radius: 4px !important;
+    transition: background-color 0.3s ease;
+  }
+  .pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+  }
+  .pagination .page-link:hover {
+    background-color: #0069d9;
+    color: #fff;
+  }
+
+  /* 12) Responsividade para telas pequenas */
+  @media (max-width: 768px) {
+    .container {
+      padding: 15px;
+    }
+    form {
+      flex-direction: column;
+    }
+    form > div {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    form button {
+      width: 100%;
+    }
+    .form-row.mt-3 {
+      justify-content: center !important;
+    }
+  }
+
+  /* 13) Garantir transparência em botões de sidebar (caso o sidebar utilize classes próprias) */
+  .sidebar .btn,
+  .sidebar button {
+    background-color: transparent !important;
+    border: none !important;
+    color: #fff !important;
+  }
+  .sidebar a.nav-link {
+    background-color: transparent !important;
+    border: none !important;
+    color: #fff !important;
+  }
+  .sidebar .btn i,
+  .sidebar a.nav-link i {
+    color: #fff !important;
+  }
+  .sidebar .active {
+    background-color: transparent !important;
+  }
+</style>
+
+<!-- Atenção: removemos classes como “mt-5” ou “mt-2” daqui -->
+<div class="container">
   <h2 class="mb-4 text-center">Consulta Checklist</h2>
   
   <!-- Formulário de Filtros -->

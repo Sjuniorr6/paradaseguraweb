@@ -112,7 +112,7 @@ class PassagemListView(LoginRequiredMixin,PermissionRequiredMixin,ListView):
     model = passagemmodel
     template_name = 'historico_passagem.html'
     context_object_name = 'passagens'
-    paginate_by = 10  # Defina quantas entradas por página você desej
+    paginate_by = 50  # Defina quantas entradas por página você desej
     permission_required = "pparada.add_paradasegura"
     def get_queryset(self):
         return passagemmodel.objects.all().order_by('-data_criacao') 
@@ -270,13 +270,14 @@ class EquipamentosPorPostoView(LoginRequiredMixin,TemplateView):
 
 
 
-from rest_framework import generics
+from rest_framework import generics, response
 from .models import paradasegura
 from .serializers import ParadaseguraSerializer
 
 class ParadaseguraListAPIView(generics.ListAPIView):
     queryset = paradasegura.objects.all()
     serializer_class = ParadaseguraSerializer
+    
 
 
 
@@ -437,3 +438,5 @@ def export_excel(request):
     # 7. Salvar a planilha no response
     wb.save(response)
     return response
+
+

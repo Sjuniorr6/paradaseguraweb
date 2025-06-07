@@ -190,24 +190,6 @@ Mapa de Dispositivos
     return Math.round(perc) + '%';
   }
 
-  // Reverse Geocoding via Nominatim
-  function reverseGeocode(lat, lng, callback) {
-    var url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
-    fetch(url, {
-      headers: {
-        'User-Agent': 'SeuApp/1.0 (seuemail@dominio.com)'
-      }
-    })
-    .then(response => response.json())
-    .then(data => {
-      callback(data.display_name || "Endereço não encontrado");
-    })
-    .catch(error => {
-      console.error("Erro no reverse geocoding:", error);
-      callback("Erro ao obter endereço");
-    });
-  }
-
   // Determina a cerca em que o dispositivo se encontra
   function getDeviceFence(lat, lng, geofences) {
     let matchingFences = [];
@@ -302,21 +284,9 @@ Mapa de Dispositivos
               ? (device.main_voltage ? voltageToPercentage(parseFloat(device.main_voltage)) : "N/A")
               : (device.batteryPercentual || "N/A")}<br>
             <strong>Localização:</strong> ${lat}, ${lng}<br>
-            <strong>Endereço:</strong> Carregando...<br>
+            <strong>Endereço:</strong> ${device.endereco || 'Endereço não disponível'}<br>
             <strong>Cerca:</strong> ${cercaCalculada}
           `);
-
-          reverseGeocode(lat, lng, function(endereco) {
-            marker.setPopupContent(`
-              <strong>${tipo}:</strong> ${idDevice}<br>
-              <strong>Bateria:</strong> ${(tipo === "Cadeado")
-                ? (device.main_voltage ? voltageToPercentage(parseFloat(device.main_voltage)) : "N/A")
-                : (device.batteryPercentual || "N/A")}<br>
-              <strong>Localização:</strong> ${lat}, ${lng}<br>
-              <strong>Endereço:</strong> ${endereco}<br>
-              <strong>Cerca:</strong> ${cercaCalculada}
-            `);
-          });
 
           // Linha na tabela
           var row = document.createElement('tr');

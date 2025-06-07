@@ -1,0 +1,291 @@
+function showNotification(data) {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    
+    // Adiciona classe específica para o tipo de notificação
+    if (data.type === 'geofence') {
+        notification.classList.add('geofence-notification');
+        if (data.geofence_type === 'Primario') {
+            notification.classList.add('primary-geofence');
+        } else {
+            notification.classList.add('secondary-geofence');
+        }
+    }
+    
+    // Cria o conteúdo da notificação
+    let content = '';
+    
+    // Adiciona imagem se existir
+    if (data.image) {
+        content += `<div class="notification-image">
+            <img src="${data.image}" alt="${data.title}">
+        </div>`;
+    }
+    
+    content += `
+        <div class="notification-content">
+            <h3>${data.title}</h3>
+            <p>${data.text}</p>
+            ${data.vehicle ? `
+                <div class="vehicle-info">
+                    <p><strong>Placa:</strong> ${data.vehicle.plate}</p>
+                    <p><strong>Motorista:</strong> ${data.vehicle.driver_name}</p>
+                    <p><strong>Status:</strong> ${data.vehicle.status}</p>
+                </div>
+            ` : ''}
+        </div>
+        <button class="close-notification" onclick="this.parentElement.remove()">×</button>
+    `;
+    
+    notification.innerHTML = content;
+    document.body.appendChild(notification);
+    
+    // Adiciona animação de entrada
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+}
+
+// Adiciona estilos CSS para as notificações
+const style = document.createElement('style');
+style.textContent = `
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transform: translateX(120%);
+        transition: transform 0.3s ease-out;
+        max-width: 400px;
+    }
+    
+    .notification.show {
+        transform: translateX(0);
+    }
+    
+    .notification-image {
+        width: 50px;
+        height: 50px;
+        flex-shrink: 0;
+    }
+    
+    .notification-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .notification-content {
+        flex-grow: 1;
+    }
+    
+    .notification h3 {
+        margin: 0 0 5px 0;
+        color: #333;
+    }
+    
+    .notification p {
+        margin: 0;
+        color: #666;
+    }
+    
+    .vehicle-info {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #eee;
+    }
+    
+    .vehicle-info p {
+        margin: 5px 0;
+        font-size: 0.9em;
+    }
+    
+    .close-notification {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: #999;
+        padding: 0 5px;
+    }
+    
+    .close-notification:hover {
+        color: #666;
+    }
+    
+    .geofence-notification {
+        border-left: 4px solid #4CAF50;
+    }
+    
+    .primary-geofence {
+        border-left-color: #2196F3;
+    }
+    
+    .secondary-geofence {
+        border-left-color: #FFC107;
+    }
+`;
+document.head.appendChild(style);
+
+// Função para atualizar a lista de eventos
+function updateEventsList(devicesInGeofences) {
+    const eventsContainer = document.getElementById('events-container');
+    if (!eventsContainer) return;
+
+    // Limpa o container atual
+    eventsContainer.innerHTML = '';
+
+    // Se não houver dispositivos em cercas, mostra mensagem
+    if (!devicesInGeofences || devicesInGeofences.length === 0) {
+        eventsContainer.innerHTML = '<div class="no-events">Nenhum veículo dentro das cercas no momento</div>';
+        return;
+    }
+
+    // Agrupa eventos por cerca
+    const eventsByGeofence = {};
+    devicesInGeofences.forEach(device => {
+        const geofenceName = device.current_geofence;
+        if (!eventsByGeofence[geofenceName]) {
+            eventsByGeofence[geofenceName] = [];
+        }
+        eventsByGeofence[geofenceName].push(device);
+    });
+
+    // Cria elementos para cada cerca
+    Object.entries(eventsByGeofence).forEach(([geofenceName, devices]) => {
+        const geofenceSection = document.createElement('div');
+        geofenceSection.className = 'geofence-section';
+        
+        const isPrimary = geofenceName.includes('Primario');
+        const headerClass = isPrimary ? 'primary-header' : 'secondary-header';
+        
+        geofenceSection.innerHTML = `
+            <div class="geofence-header ${headerClass}">
+                <h3>${geofenceName}</h3>
+                <span class="device-count">${devices.length} veículo(s)</span>
+            </div>
+            <div class="devices-list">
+                ${devices.map(device => `
+                    <div class="device-item">
+                        <div class="device-info">
+                            <strong>Placa:</strong> ${device.plate || 'N/A'}<br>
+                            <strong>Motorista:</strong> ${device.driver_name || 'N/A'}<br>
+                            <strong>Status:</strong> ${device.status || 'N/A'}<br>
+                            <strong>Última Atualização:</strong> ${device.last_update || 'N/A'}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        eventsContainer.appendChild(geofenceSection);
+    });
+}
+
+// Adiciona estilos CSS para a lista de eventos
+const eventsStyle = document.createElement('style');
+eventsStyle.textContent = `
+    .geofence-section {
+        margin-bottom: 20px;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .geofence-header {
+        padding: 12px 15px;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .primary-header {
+        background-color: #2196F3;
+    }
+
+    .secondary-header {
+        background-color: #FFC107;
+    }
+
+    .geofence-header h3 {
+        margin: 0;
+        font-size: 1.1em;
+    }
+
+    .device-count {
+        background: rgba(255,255,255,0.2);
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.9em;
+    }
+
+    .devices-list {
+        background: white;
+        padding: 10px;
+    }
+
+    .device-item {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .device-item:last-child {
+        border-bottom: none;
+    }
+
+    .device-info {
+        font-size: 0.9em;
+        line-height: 1.4;
+    }
+
+    .no-events {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+        font-style: italic;
+    }
+`;
+document.head.appendChild(eventsStyle);
+
+// Atualiza a função que recebe os dados do WebSocket
+function handleWebSocketMessage(event) {
+    const data = JSON.parse(event.data);
+    if (data.devices_in_geofences) {
+        updateEventsList(data.devices_in_geofences);
+    }
+    // ... resto do código existente ...
+}
+
+<div class="container">
+    <div id="map"></div>
+    <div id="events-container" class="events-panel"></div>
+</div>
+
+<style>
+    .container {
+        display: flex;
+        height: 100vh;
+    }
+
+    #map {
+        flex: 1;
+        height: 100%;
+    }
+
+    .events-panel {
+        width: 350px;
+        height: 100%;
+        overflow-y: auto;
+        background: #f5f5f5;
+        padding: 15px;
+        box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+    }
+</style> 

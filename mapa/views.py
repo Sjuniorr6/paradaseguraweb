@@ -56,6 +56,24 @@ def get_devices_data(request):
 
     tempo_atual = time.time()
 
+    # 🚧 Cercas geográficas (sempre definidas)
+    geofences = [
+        {"name": "Posto(1)Primario", "center": [-22.10141479570105, -47.8242335993846], "radius": 5000},
+        {"name": "posto(1) Secundario", "center": [-22.10141479570105, -47.8242335993846], "radius": 150},
+        {"name": "Posto(2)Primario", "center": [ -21.775,  -47.5381], "radius": 5000},
+        {"name": "posto(2) Secundario", "center": [ -21.775,  -47.5381],"radius": 150},
+        {"name": "Posto(3)Primario", "center": [ -21.3648,  -48.7574], "radius": 5000},
+        {"name": "posto(3) Secundario", "center": [ -21.3648,  -48.7574],"radius": 200},
+        {"name": "Posto(4)Primario", "center": [ -20.5542,  -49.7085], "radius": 5000},
+        {"name": "posto(4) Secundario", "center": [ -20.5542,  -49.7085],"radius": 200},
+        {"name": "Posto(5)Primario", "center": [ -20.5334,  -47.846], "radius": 5000},
+        {"name": "posto(5) Secundario", "center": [ -20.5334,  -47.846],"radius": 200},
+        {"name": "Posto(6)Primario", "center": [ -18.8786,  -49.0557], "radius": 5000},
+        {"name": "posto(6) Secundario", "center": [ -18.8786,  -49.0557],"radius": 200},
+        {"name": "Posto(7)Primario", "center": [  -18.661527,  -48.161337], "radius": 5000},
+        {"name": "posto(7) Secundario", "center": [  -18.661527,  -48.161337],"radius": 200},
+    ]
+
     # 🔵 API T42 (Se passou mais de 60s desde a última chamada)
     if tempo_atual - ultima_chamada_t42 >= 60:
         params_t42 = {
@@ -90,9 +108,13 @@ def get_devices_data(request):
         try:
             stc_response = requests.post(STC_API_URL, json=payload_stc, verify=False)
             if stc_response.status_code == 200:
-                stc_raw_data = stc_response.json()
+                try:
+                    stc_raw_data = stc_response.json()
+                except Exception as e:
+                    print(f"Erro ao decodificar JSON da API STC: {e}")
+                    stc_raw_data = {}
                 if "data" in stc_raw_data and stc_raw_data["data"]:
-                    ultima_resposta_stc = stc_raw_data["data"]  # ✅ Apenas sobrescreve se houver dados
+                    ultima_resposta_stc = stc_raw_data["data"]
                     ultima_chamada_stc = tempo_atual
                     print("✅ API STC atualizada com novos dados.")
                 else:
@@ -107,7 +129,7 @@ def get_devices_data(request):
     # 🔥 Se `ultima_resposta_stc` for None ou uma lista vazia, mantém os últimos dados salvos
     if not ultima_resposta_stc:
         print("⚠️ Nenhum dado STC válido encontrado. Mantendo últimos dados salvos.")
-        ultima_resposta_stc = ultima_resposta_stc if ultima_resposta_stc else []  # 🔥 Aqui ele mantém os últimos dados
+        ultima_resposta_stc = ultima_resposta_stc if ultima_resposta_stc else []
 
     # Se houver dispositivos, adiciona o tipo
     for device in ultima_resposta_t42:
@@ -115,28 +137,23 @@ def get_devices_data(request):
     for device in ultima_resposta_stc:
         device["type"] = "STC"
 
-    # 🚧 Cercas geográficas (Mantendo todas as que você criou)
-        geofences = [
-        {"name": "Posto(1)Primario", "center": [-22.10141479570105, -47.8242335993846], "radius": 5000},  # 5 km
-        {"name": "posto(1) Secundario", "center": [-22.10141479570105, -47.8242335993846], "radius": 150},  # 100m
-        {"name": "Posto(2)Primario", "center": [ -21.775,  -47.5381], "radius": 5000},  # 5 km
-        {"name": "posto(2) Secundario", "center": [ -21.775,  -47.5381],"radius": 150},  # 100m
-        {"name": "Posto(3)Primario", "center": [ -21.3648,  -48.7574], "radius": 5000},  # 5 km
-        {"name": "posto(3) Secundario", "center": [ -21.3648,  -48.7574],"radius": 200},  # 100m
-        {"name": "Posto(4)Primario", "center": [ -20.5542,  -49.7085], "radius": 5000},  # 5 km
-        {"name": "posto(4) Secundario", "center": [ -20.5542,  -49.7085],"radius": 200},  # 100m
-        {"name": "Posto(5)Primario", "center": [ -20.5334,  -47.846], "radius": 5000},  # 5 km
-        {"name": "posto(5) Secundario", "center": [ -20.5334,  -47.846],"radius": 200},  # 100m
-        {"name": "Posto(6)Primario", "center": [ -18.8786,  -49.0557], "radius": 5000},  # 5 km
-        {"name": "posto(6) Secundario", "center": [ -18.8786,  -49.0557],"radius": 200},  # 100m
-        {"name": "Posto(7)Primario", "center": [  -18.661527,  -48.161337], "radius": 5000},  # 5 km
-        {"name": "posto(7) Secundario", "center": [  -18.661527,  -48.161337],"radius": 200},  # 100m
-        
-    ]
+    # DEBUG: Mostra os valores atuais no console
+    print("\n==== DEBUG get_devices_data ====")
+    print(f"STC devices: {len(ultima_resposta_stc)}")
+    for d in ultima_resposta_stc:
+        print(d)
+    print(f"T42 devices: {len(ultima_resposta_t42)}")
+    for d in ultima_resposta_t42:
+        print(d)
+    print(f"Geofences: {len(geofences)}")
+    for g in geofences:
+        print(g)
+    print("==============================\n")
 
+    # Sempre retorna JSON válido
     return JsonResponse({
         "t42_devices": ultima_resposta_t42,
-        "stc_devices": ultima_resposta_stc,  # 🔥 SEMPRE retorna os últimos dados, nunca []
+        "stc_devices": ultima_resposta_stc,
         "geofences": geofences
     })
 
@@ -386,7 +403,7 @@ from django.shortcuts import render
 
 def fetch_events(viag_codigo, headers):
     """Função auxiliar para buscar eventos de uma viagem."""
-    url_eventos = "https://trafegus.over-haul.com/ws_rest/public/api/eventos"
+    url_eventos = "https://trafegus.over-haul.com/ws/getClientVehicles"
     params_eventos = {
         "UltCodigo": 1,
         "CodViag": str(viag_codigo)
@@ -395,74 +412,234 @@ def fetch_events(viag_codigo, headers):
     response_eventos.raise_for_status()
     return response_eventos.json()
 
+
 class TrafegusVeiculoView(View):
     def get(self, request, *args, **kwargs):
-        # 1) Credenciais
-        credentials = "V1NfR09MREVOU0FUOk9WRVJIQVVMLjIwMjU="
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Basic {credentials}",
-            "X-App-Trafegus": "777"
-        }
-
-        # 2) URL e parâmetros para buscar viagens
-        url_viagens = "https://trafegus.over-haul.com/ws_rest/public/api/viagem"
-        params_viagens = {
-            "EmbarcadorDoc": "61064929000179"  # CNPJ
-        }
-
         try:
-            # --- A) Primeira requisição: Viagens ---
-            response_viagens = requests.get(url_viagens, headers=headers, params=params_viagens, verify=False)
-            response_viagens.raise_for_status()
-            data = response_viagens.json()
-
-            # Se o JSON retornar algo como {"error": "..."}
-            if "error" in data:
-                return render(request, "ultima_posicoes.html", {"error": data["error"]})
-
-            # Lista de viagens
-            viagens = data.get("viagens", [])
-
-            # --- B) Montar dicionário de "futures" para cada viag_codigo ---
-            futures_dict = {}  # { viag_codigo: (viagem, future) }
-
-            with ThreadPoolExecutor(max_workers=10) as executor:
-                for viagem in viagens:
-                    valor_frete_list = viagem.get("valor_frete", [])
-                    if not valor_frete_list:
-                        # Se não tem valor_frete, já define "eventos" vazio
-                        viagem["eventos"] = []
+            # API credentials
+            credentials = {
+                "key": "17bfae24cd65753c0a577e8f65a405cf",
+                "user": "stc",
+                "pass": "e725df0794b817f84db1e813c3512b21"
+            }
+            headers = {
+                "Content-Type": "application/json",
+                "X-App-Trafegus": "777"
+            }
+            url = "https://trafegus.over-haul.com/ws/getClientVehicles"
+            
+            # --- CERCAS ---
+            cercas = [
+                {"nome": "Posto(1)Primario", "latitude": -22.10141479570105, "longitude": -47.8242335993846, "raio": 5000},
+                {"nome": "posto(1) Secundario", "latitude": -22.10141479570105, "longitude": -47.8242335993846, "raio": 150},
+                {"nome": "Posto(2)Primario", "latitude": -21.775, "longitude": -47.5381, "raio": 5000},
+                {"nome": "posto(2) Secundario", "latitude": -21.775, "longitude": -47.5381, "raio": 150},
+                {"nome": "Posto(3)Primario", "latitude": -21.3648, "longitude": -48.7574, "raio": 5000},
+                {"nome": "posto(3) Secundario", "latitude": -21.3648, "longitude": -48.7574, "raio": 200},
+                {"nome": "Posto(4)Primario", "latitude": -20.5542, "longitude": -49.7085, "raio": 5000},
+                {"nome": "posto(4) Secundario", "latitude": -20.5542, "longitude": -49.7085, "raio": 200},
+                {"nome": "Posto(5)Primario", "latitude": -20.5334, "longitude": -47.846, "raio": 5000},
+                {"nome": "posto(5) Secundario", "latitude": -20.5334, "longitude": -47.846, "raio": 200},
+                {"nome": "Posto(6)Primario", "latitude": -18.8786, "longitude": -49.0557, "raio": 5000},
+                {"nome": "posto(6) Secundario", "latitude": -18.8786, "longitude": -49.0557, "raio": 200},
+                {"nome": "Posto(7)Primario", "latitude": -18.661527, "longitude": -48.161337, "raio": 5000},
+                {"nome": "posto(7) Secundario", "latitude": -18.661527, "longitude": -48.161337, "raio": 200},
+            ]
+            
+            # --- EQUIPAMENTOS DO BANCO ---
+            equipamentos_qs = Equipamento.objects.all()
+            equipamentos = []
+            for eq in equipamentos_qs:
+                if eq.latitude and eq.longitude:
+                    equipamentos.append({
+                        "nome": eq.identificador or eq.cliente or f"ID {eq.id}",
+                        "latitude": float(eq.latitude),
+                        "longitude": float(eq.longitude)
+                    })
+            
+            # --- VEÍCULOS (API) ---
+            veiculos = []
+            try:
+                response = requests.post(url, json=credentials, headers=headers, verify=False)
+                response.raise_for_status()
+                data = response.json()
+                if data.get("success"):
+                    for v in data.get("data", []):
+                        try:
+                            lat = float(v.get("latitude", 0))
+                            lon = float(v.get("longitude", 0))
+                            if lat != 0 and lon != 0:  # Só adiciona se tiver coordenadas válidas
+                                veiculos.append({
+                                    "placa": v.get("plate", ""),
+                                    "motorista": v.get("driverName", ""),
+                                    "status": v.get("status", ""),
+                                    "latitude": lat,
+                                    "longitude": lon,
+                                    "empresa": get_empresa_por_placa(v.get("plate", "")),
+                                    "tipo": "Trafegus"
+                                })
+                                print(f"Veículo adicionado: {v.get('plate', '')} em {lat}, {lon}")
+                        except (ValueError, TypeError) as e:
+                            print(f"Erro ao processar veículo {v.get('plate', '')}: {str(e)}")
+                            continue
+                else:
+                    print("API Trafegus erro:", data.get("error"))
+            except Exception as e:
+                print("Erro ao buscar veículos da API:", e)
+            
+            # Adiciona veículos STC
+            stc_veiculos = get_stc_vehicle_positions()
+            for v in stc_veiculos:
+                if v.get("latitude") and v.get("longitude"):
+                    try:
+                        lat = float(v.get("latitude"))
+                        lon = float(v.get("longitude"))
+                        if lat != 0 and lon != 0:
+                            veiculos.append({
+                                "placa": v.get("nome", ""),
+                                "motorista": "STC",
+                                "status": v.get("detalhes", {}).get("status", ""),
+                                "latitude": lat,
+                                "longitude": lon,
+                                "empresa": get_empresa_por_placa(v.get("nome", "")),
+                                "tipo": "STC"
+                            })
+                            print(f"Veículo STC adicionado: {v.get('nome', '')} em {lat}, {lon}")
+                    except (ValueError, TypeError) as e:
+                        print(f"Erro ao processar veículo STC {v.get('nome', '')}: {str(e)}")
                         continue
+            
+            print(f"Total de veículos processados: {len(veiculos)}")
+            
+            # Se for uma requisição AJAX, retorna JSON
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({
+                    "success": True,
+                    "cercas": cercas,
+                    "equipamentos": equipamentos,
+                    "veiculos": veiculos
+                })
+            
+            # Se for uma requisição normal, renderiza o template
+            return render(request, "ultima_posicoes.html", {
+                "cercas": cercas,
+                "equipamentos": equipamentos,
+                "veiculos": veiculos,
+                "total_veiculos": len(veiculos),
+                "veiculos_em_cercas": len([v for v in veiculos if any(
+                    check_geofence(v["latitude"], v["longitude"], {"center": [c["latitude"], c["longitude"]], "radius": c["raio"]})
+                    for c in cercas
+                )])
+            })
+            
+        except Exception as e:
+            print("Erro na view:", str(e))
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
 
-                    viag_codigo = valor_frete_list[0].get("viag_codigo")
-                    if viag_codigo:
-                        # Dispara a requisição em paralelo
-                        future = executor.submit(fetch_events, viag_codigo, headers)
-                        # Associa a future a este código de viagem
-                        futures_dict[viag_codigo] = (viagem, future)
-                    else:
-                        viagem["eventos"] = []
-
-            # --- C) Consumir os resultados (eventos) de cada future ---
-            for viag_codigo, (viagem, future) in futures_dict.items():
+def get_stc_vehicle_positions():
+    """Obtém as posições dos veículos da API STC"""
+    print("\n=== INICIANDO CHAMADA API STC ===")
+    url = "http://ap3.stc.srv.br/integration/prod/ws/getVehiclePositions"
+    payload = {
+        "key": "d548f2c076480dcc2bd69fcbf8e6be61",
+        "user": "quality.paradasegura",
+        "pass": "6b25cff77f9bad60a73fa81daa7d06ae"
+    }
+    headers = {
+        "Content-Type": "application/json"
+    }
+    
+    try:
+        response = requests.post(url, json=payload, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data.get("success"):
+            veiculos = []
+            for v in data.get("data", []):
                 try:
-                    data_eventos = future.result()  # Bloqueia até terminar a requisição
-                except requests.RequestException:
-                    # Se der erro, eventos = []
-                    viagem["eventos"] = []
+                    # Converte latitude e longitude para float
+                    lat = float(v.get("latitude", 0))
+                    lon = float(v.get("longitude", 0))
+                    
+                    # Só adiciona se tiver coordenadas válidas
+                    if lat != 0 and lon != 0:
+                        # Usa o endereço que já vem da API
+                        endereco = v.get("address", "Endereço não disponível")
+                        
+                        veiculo = {
+                            "nome": v.get("plate", ""),  # Nome para exibição no mapa
+                            "latitude": lat,
+                            "longitude": lon,
+                            "tipo": "STC",  # Identificador para o mapa
+                            "endereco": endereco,  # Endereço já formatado
+                            "detalhes": {
+                                "placa": v.get("plate", ""),
+                                "modelo": v.get("deviceModel", ""),
+                                "endereco": endereco,
+                                "data": v.get("date", ""),
+                                "ignicao": v.get("ignition", ""),
+                                "velocidade": v.get("speed", "0"),
+                                "bateria": v.get("batteryPercentual", ""),
+                                "gpsFix": v.get("gpsFix", "0"),
+                                "originPosition": v.get("originPosition", "")
+                            },
+                            "empresa": get_empresa_por_placa(v.get("plate", "")),
+                            "tipo": "STC"
+                        }
+                        veiculos.append(veiculo)
+                        print(f"Veículo adicionado: {veiculo['nome']} em {lat}, {lon}")
+                except (ValueError, TypeError) as e:
+                    print(f"Erro ao processar veículo {v.get('plate', '')}: {str(e)}")
                     continue
 
-                # Agora filtra e guarda no dicionário da viagem
-                todos_eventos = data_eventos.get("eventos", [])
-                viagem["eventos"] = todos_eventos
+            print(f"Total de veículos STC processados: {len(veiculos)}")
+            return veiculos
+        else:
+            print("API STC retornou erro:", data.get("error"))
+            return []
+            
+    except Exception as e:
+        print("\n❌ ERRO AO BUSCAR VEÍCULOS STC:")
+        print(f"Tipo do erro: {type(e)}")
+        print(f"Mensagem: {str(e)}")
+        if hasattr(e, 'response'):
+            print(f"Resposta da API: {e.response.text}")
+        return []
 
-            # Monta o contexto e renderiza
-            context = {"viagens": viagens}
+class STCVeiculosAPIView(View):
+    """View para retornar as últimas posições dos veículos da STC em JSON"""
+    def get(self, request, *args, **kwargs):
+        try:
+            veiculos = get_stc_vehicle_positions()
+            return JsonResponse({
+                "success": True,
+                "veiculos": veiculos,
+                "total": len(veiculos),
+                "timestamp": time.time()
+            })
+        except Exception as e:
+            return JsonResponse({
+                "success": False,
+                "error": str(e)
+            }, status=500)
 
-        except requests.RequestException as e:
-            context = {"error": f"Erro na requisição: {str(e)}"}
-        except ValueError:
-            context = {"error": "Erro ao processar a resposta JSON"}
+def minha_view(request):
+    """View de exemplo para tratamento de erros"""
+    try:
+        # Implementar lógica específica aqui
+        return JsonResponse({"ok": True, "dados": {}})
+    except Exception as e:
+        return JsonResponse({"ok": False, "erro": str(e)}, status=500)
 
-        return render(request, "ultima_posicoes.html", context)
+def mapa_stc(request):
+    return render(request, 'mapa_stc.html')
+
+def get_empresa_por_placa(placa):
+    # Adapte para sua lógica real
+    if placa in ["RUR3I87", "PZZ9737"]:  # placas da Corteva
+        return "Corteva"
+    elif placa in ["OUTRA1", "OUTRA2"]:  # placas da Comandolog
+        return "Comandolog"
+    else:
+        return "Desconhecida"

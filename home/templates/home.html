@@ -1,21 +1,268 @@
+{# templates/home.html #}
 {% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"/>
+
+  <style>
+    /* Fundo geral preto */
+    body {
+      background: #4e5257;
+      margin-top: 0;
+      color: #FFFFFF;
+    }
+    h1,h2,h3,h4,h5 {
+      color: #000;
+      font-weight: 600;
+    }
+    p {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #000;
+    }
+
+    /* Container branco */
+    .container {
+      max-width: 1000px;
+      background: rgba(255,255,255,0.49);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    /* Ajuste do conteúdo lateral */
+    .content-wrapper {
+      margin-left: 60px;
+      padding: 20px;
+      transition: margin-left 0.3s ease-in-out;
+    }
+    @media (max-width: 768px) {
+      .content-wrapper {
+        margin-left: 0;
+        padding: 10px;
+      }
+    }
+
+    /* Espaçamento reduzido nos botões */
+    .alerts-wrapper {
+      /* diminui ainda mais o espaço acima */
+      margin-top: -70px !important;
+      margin-bottom: 8px;
+    }
+
+    /* Cartão de boas-vindas marrom */
+    .welcome-card {
+      background: #7a5e2fc9;
+      border-radius: 12px;
+      padding: 48px;
+      color: #FFF;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    .welcome-card h2 {
+      font-size: 2rem;
+      margin-bottom: 16px;
+      color: #0f0f0fd3;
+      font-weight: 700;
+    }
+    .welcome-card p {
+      margin-bottom: 12px;
+      color: #FFF;
+    }
+
+    /* Seção de funcionalidades – fundo branco */
+    .features-section {
+      background: rgba(255,255,255,0.49);
+      border-radius: 12px;
+      padding: 40px 20px;
+      margin-top: 32px;
+    }
+    .features-section .section-title {
+      color: #7A5F2F;
+    }
+
+    /* Grid de cards */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px,1fr));
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    /* Cada card em branco com detalhes em marrom */
+    .feature-card {
+      background: rgba(255,255,255,0.4);
+      color: #000;
+      border-radius: 12px;
+      padding: 24px 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .feature-card .icon-wrapper {
+      width: 48px; height: 48px;
+      background: #7A5F2F; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+    }
+    .feature-card .icon-wrapper .material-icons {
+      font-size: 24px; color: #FFF;
+    }
+    .feature-card h5 {
+      font-size: 1.1rem; margin-bottom: 12px;
+    }
+    .feature-card p {
+      font-size: 0.95rem; line-height: 1.5; margin-bottom: 16px;
+    }
+    .feature-card .btn-feature {
+      background: #7A5F2F; color: #FFF;
+      padding: 8px 16px; font-size: 0.95rem;
+      border-radius: 6px; text-decoration: none;
+      align-self: flex-start; transition: transform .2s;
+    }
+    .feature-card .btn-feature:hover {
+      transform: scale(1.05);
+    }
+
+    /* Ajustes para telas largas */
+    @media (min-width: 992px) {
+      .container { max-width: 1600px; }
+      .welcome-card { padding: 60px; }
+      .features-section { padding: 80px 60px; }
+      .features-grid { grid-template-columns: repeat(auto-fill, minmax(340px,1fr)); gap: 40px; }
+      .feature-card { padding: 40px 32px; }
+      .feature-card .icon-wrapper { width: 72px; height: 72px; }
+      .feature-card .icon-wrapper .material-icons { font-size: 36px; }
+      .feature-card h5 { font-size: 1.4rem; }
+      .feature-card p { font-size: 1.05rem; }
+      .feature-card .btn-feature { padding: 12px 24px; font-size: 1.05rem; }
+    }
+  </style>
+{% endblock %}
 
 {% block content %}
+  {% include "components/components_sidebar.html" %}
 
-<!-- Inclui a Sidebar/Navbar Responsiva -->
-{% include "components/components_sidebar.html" %}
-
-<div class="container d-flex flex-column justify-content-center align-items-center" style="min-height: 100vh; text-align: center;">
-  <div class="bg-dark bg-opacity-75 p-4 rounded shadow text-white" style="max-width: 400px;">
-    <h1 class="mb-3">Bem-vindo, {{ user.username }}</h1>
-    <p></p>
-
-    <!-- Botão de Logout com POST -->
-    <form action="{% url 'logout' %}" method="post">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-danger w-100">ALERTA</button>
-    </form>
+  <!-- BOTÕES DE ALERTA E NOTIFICAÇÕES -->
+  <div class="d-flex justify-content-center align-items-center gap-2 alerts-wrapper">
+    <button
+      id="alertButton"
+      class="btn"
+      style="background: #dd3c3c; border: none; padding: 10px 20px; color: #FFF; font-size: 18px; display: inline-flex; align-items: center;"
+    >
+      <span class="material-icons" style="font-size: 36px; color: #FFF; margin-right:8px;">
+        notifications_none
+      </span>
+      Alertas
+    </button>
+    <a
+      id="alertLogButton"
+      class="btn"
+      style="background: #121479; border: none; padding: 10px 20px; font-size: 18px; color: #FFF; display: inline-flex; align-items: center;"
+      href="{% url 'notificar:alertlog_list' %}"
+    >
+      <span class="material-icons" style="font-size: 36px; color: #FFF; margin-right:8px;">
+        notifications_none
+      </span>
+      Notificações
+    </a>
   </div>
-</div>
 
+  <!-- CONTEÚDO PRINCIPAL -->
+  <div class="content-wrapper">
+    <div class="container">
+
+      <!-- CARD DE BOAS-VINDAS -->
+      <div class="welcome-card mb-4">
+        <h2>Bem-vindo à Plataforma Parada Segura</h2>
+        <p>
+          O <strong>Aplicativo Parada Segura</strong> é uma solução inovadora
+          que promove a segurança e eficiência em paradas de veículos. Desenvolvido
+          para uso por agentes, gerenciadoras de risco e clientes, ele permite
+          verificações completas, registro de não conformidades e visualização
+          de dados em tempo real.
+        </p>
+        <p>
+          Através de uma interface intuitiva, o sistema garante o controle rigoroso
+          de documentos, tecnologias embarcadas e registros fotográficos,
+          fortalecendo a rastreabilidade dos veículos e promovendo decisões
+          ágeis e seguras.
+        </p>
+      </div>
+
+      <!-- SEÇÃO DE FUNCIONALIDADES -->
+      <section class="features-section">
+        <h3 class="section-title text-center mb-4">Principais Funcionalidades</h3>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="icon-wrapper">
+              <span class="material-icons">description</span>
+            </div>
+            <h5>Formulário de Auditoria</h5>
+            <p>
+              Registro completo das informações do veículo, motorista e carga, com
+              dados de CNH, Renavam, placas e fotos detalhadas.
+            </p>
+            <a href="#" class="btn-feature">Iniciar Auditoria</a>
+          </div>
+          <div class="feature-card">
+            <div class="icon-wrapper">
+              <span class="material-icons">devices</span>
+            </div>
+            <h5>Tecnologias Embarcadas</h5>
+            <p>
+              Controle e rastreamento de dispositivos como iscas e cadeados
+              inteligentes, com associação/desassociação em tempo real.
+            </p>
+            <a href="#" class="btn-feature">Gerenciar Dispositivos</a>
+          </div>
+          <div class="feature-card">
+            <div class="icon-wrapper">
+              <span class="material-icons">folder_open</span>
+            </div>
+            <h5>Arquivos e Checklists</h5>
+            <p>
+              Armazenamento de dados das auditorias, atualizações e não
+              conformidades, com histórico acessível a qualquer momento.
+            </p>
+            <a href="#" class="btn-feature">Ver Histórico</a>
+          </div>
+          <div class="feature-card">
+            <div class="icon-wrapper">
+              <span class="material-icons">history</span>
+            </div>
+            <h5>Últimas Paradas</h5>
+            <p>
+              Histórico recente com resumo da auditoria e status da Parada Segura
+              para acompanhamento contínuo.
+            </p>
+            <a href="#" class="btn-feature">Ver Paradas</a>
+          </div>
+          <div class="feature-card">
+            <div class="icon-wrapper">
+              <span class="material-icons">star</span>
+            </div>
+            <h5>Acesso do Cliente</h5>
+            <p>
+              Visualização em tempo real da localização do veículo, tecnologias
+              embarcadas, status de auditoria e resumo completo do checklist.
+            </p>
+            <a href="#" class="btn-feature">Portal Cliente</a>
+          </div>
+          <div class="feature-card">
+            <div class="icon-wrapper">
+              <span class="material-icons">sos</span>
+            </div>
+            <h5>Integração com Central de Crise</h5>
+            <p>
+              Conexão direta com sistemas de emergência para resposta rápida em
+              situações críticas e coordenação de segurança.
+            </p>
+            <a href="#" class="btn-feature">Central de Crise</a>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
 {% endblock %}

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import get_t42_data,MapaView,get_devices_data,TrafegusVeiculoView
+from .views import get_t42_data,MapaView,get_devices_data,TrafegusVeiculoView,STCVeiculosAPIView
 
 urlpatterns = [
    
@@ -8,6 +8,6 @@ urlpatterns = [
     
     path('get_devices_data/', get_devices_data, name='get_devices_data'),
     path('trafegus/veiculo/', TrafegusVeiculoView.as_view(), name='trafegus_veiculo'),
-    
+    path('api/stc/veiculos/', STCVeiculosAPIView.as_view(), name='stc_veiculos_api'),
     
 ]

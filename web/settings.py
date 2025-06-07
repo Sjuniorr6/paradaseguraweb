@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-q5-hk(d@nzo8+9ku-y+2^s$8!ygh!3c2r6u8vuz^-+q1q3r3^%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['10.0.0.227','192.168.100.110','192.168.0.39','127.0.0.1']
+ALLOWED_HOSTS = ['10.0.0.244','192.168.18.173','192.168.100.110','192.168.0.39','127.0.0.1','10.0.0.156','localhost','192.168.100.103']
 
 
 # Application definition
@@ -50,7 +50,16 @@ INSTALLED_APPS = [
     'transportadora',
     'service',
     'rest_framework',
+    'channels',
+    'notificar',
+   
 ]
+ASGI_APPLICATION = 'web.asgi.application'
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -60,6 +69,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'service.middleware.CORSMiddleware',
 ]
 
 ROOT_URLCONF = 'web.urls'

@@ -1,135 +1,392 @@
-{% extends 'base.html' %}
 {% load static %}
+<!-- Material Icons CDN -->
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/icon?family=Material+Icons"
+/>
+{% include "components/_header.html" %}
 
-{% block content %}
-<style>
-  /* Estilos gerais */
-  .menu-button {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    background-color: #2d2d2d;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    font-size: 24px;
-    cursor: pointer;
-    border-radius: 5px;
-    z-index: 1000; /* Sempre acima de tudo */
-  }
-
-  /* Sidebar oculta por padrão */
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: -250px;
-    width: 250px;
-    height: 100vh;
-    background-color: #222;
-    color: white;
-    transition: left 0.3s ease-in-out;
-    padding-top: 60px;
-    box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.5);
-    z-index: 999;
-  }
-
-  /* Quando a sidebar estiver ativa */
-  .sidebar.active {
-    left: 0;
-  }
-
-  .sidebar ul {
-    list-style-type: none;
-    padding: 0;
-  }
-
-  .sidebar ul li {
-    padding: 10px 20px;
-  }
-
-  .sidebar ul li a {
-    color: white;
-    text-decoration: none;
-    display: block;
-    transition: background 0.3s;
-  }
-
-  .sidebar ul li a:hover {
-    background: #444;
-  }
-
-  .close-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 24px;
-    cursor: pointer;
-  }
-
-  /* Overlay escuro quando sidebar estiver ativa */
-  .overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.5);
-    display: none;
-    z-index: 998;
-  }
-
-  .overlay.active {
-    display: block;
-  }
-</style>
-
-<!-- Botão do menu sempre visível -->
-<button class="menu-button" onclick="openSidebar()">☰</button>
-
-<!-- Sidebar lateral -->
-<div id="sidebar" class="sidebar">
-  <span class="close-btn" onclick="closeSidebar()">×</span>
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
   <ul>
-    <li><a href="{% url 'home' %}">Home</a></li>
+    <li>
+      <a href="{% url 'home' %}">
+        <span class="material-icons">home</span>
+        <span class="sidebar-text">Início</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'mapa2' %}">
+        <span class="material-icons">map</span>
+        <span class="sidebar-text">Operações</span>
+      </a>
+    </li>
+
     {% if perms.pparada.add_paradasegura_ponto %}
-    <li><a href="{% url 'estoque'%}">Estoque</a></li>
+    <li>
+      <a href="{% url 'estoque' %}">
+        <span class="material-icons">inventory_2</span>
+        <span class="sidebar-text">Estoque</span>
+      </a>
+    </li>
     {% endif %}
+
     {% if perms.empresas.add_empresasmodels %}
-    <li><a href="{% url 'mapa2'%}">Operaçoes</a></li>
-    <li><a href="{% url 'parada_segura_list'%}">Relatorios</a></li>
-    <li><a href="{% url 'criar_transportador' %}">Cadastro Transportadora</a></li>
-    <li><a href="{% url 'lista_trasportadores'%}">Lista de Transportadoras</a></li>
-    <li><a href="{% url 'criar_empresa'%}">Cadastro de Empresas</a></li>
-    <li><a href="{% url 'listar_empresa'%}">Lista de Empresas</a></li>
-    <li><a href="{% url 'paradaseguralist2'%}">Paradas</a></li>
-    <li><a href="{% url 'trafegus_veiculo'%}">Eventos</a></li>
+    <li>
+      <a href="{% url 'parada_segura_list' %}">
+        <span class="material-icons">assessment</span>
+        <span class="sidebar-text">Relatórios</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'criar_transportador' %}">
+        <span class="material-icons">local_shipping</span>
+        <span class="sidebar-text">Cadastro Transportadora</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'lista_trasportadores' %}">
+        <span class="material-icons">format_list_bulleted</span>
+        <span class="sidebar-text">Lista Transportadoras</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'criar_empresa' %}">
+        <span class="material-icons">business</span>
+        <span class="sidebar-text">Cadastro de Empresas</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'listar_empresa' %}">
+        <span class="material-icons">apartment</span>
+        <span class="sidebar-text">Lista de Empresas</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'paradaseguralist2' %}">
+        <span class="material-icons">flag</span>
+        <span class="sidebar-text">Histórico de Paradas</span>
+      </a>
+    </li>
     {% endif %}
+
     {% if perms.pparada.add_paradasegura %}
-    <li><a href="{% url 'paradaseguralist'%}">Paradas</a></li>
-    <li><a href="{% url 'paradaseguraform'%}">Formulario de Parada</a></li>
-    <li><a href="{% url 'historico_parada'%}">Historico de Parada</a></li>
-    <li><a href="{% url 'passagemCreateView'%}">Passagem de Serviço</a></li>
-    <li><a href="{% url 'historico_passagem'%}">Historico de Passagens</a></li>
-    <li><a href="{% url 'paradaseguralist'%}">Lista de Paradas</a></li>
-    <li><a href="{% url 'mapa'%}">Mapa</a></li>
-    <li><a href="{% url 'ponto_create'%}">Registro de Ponto</a></li>
+    <li>
+      <a href="{% url 'paradaseguralist' %}">
+        <span class="material-icons">place</span>
+        <span class="sidebar-text">Lista de Paradas</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'paradaseguraform' %}">
+        <span class="material-icons">description</span>
+        <span class="sidebar-text">Formulário de Parada</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'historico_parada' %}">
+        <span class="material-icons">history</span>
+        <span class="sidebar-text">Histórico de Paradas</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'passagemCreateView' %}">
+        <span class="material-icons">swap_horiz</span>
+        <span class="sidebar-text">Passagem de Serviço</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'historico_passagem' %}">
+        <span class="material-icons">manage_history</span>
+        <span class="sidebar-text">Histórico de Passagens</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'mapa' %}">
+        <span class="material-icons">public</span>
+        <span class="sidebar-text">Mapa</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'ponto_create' %}">
+        <span class="material-icons">schedule</span>
+        <span class="sidebar-text">Registro de Ponto</span>
+      </a>
+    </li>
     {% endif %}
+
+    <!-- Botão de Sair (Logout) -->
+    <li>
+      <form action="{% url 'logout' %}" method="post" class="logout-form">
+        {% csrf_token %}
+        <button type="submit" class="sidebar-link logout-button">
+          <span class="material-icons">logout</span>
+          <span class="sidebar-text">Sair</span>
+        </button>
+      </form>
+    </li>
   </ul>
 </div>
 
-<!-- Overlay para escurecer fundo quando aberto -->
-<div id="overlay" class="overlay" onclick="closeSidebar()"></div>
+<div class="content-wrapper">
+  <!-- Restante do conteúdo da página vai aqui -->
+</div>
 
-<!-- Script para abrir e fechar a Sidebar -->
+<!-- =========================
+     ESTILOS CSS DO SIDEBAR
+========================= -->
+<style>
+  /* =====================
+     ESTILOS GERAIS DO SIDEBAR
+     ===================== */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 250px; /* Largura inicial para mobile/tablet */
+    height: 100vh;
+    background: linear-gradient(to bottom, #7a5e2fc9, #caa458);
+    box-shadow: 3px 0 10px rgba(0, 0, 0, 0.18);
+    z-index: 2000;
+
+    /* Controla o fluxo interno */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+  }
+
+  .sidebar ul li {
+    width: 100%;
+  }
+
+  .sidebar ul li a,
+  .sidebar-link {
+    color: #fff;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: 12px 20px; /* Padding padrão (mobile/tablet) */
+    font-size: 1rem;
+    font-weight: 500;
+    border: none;
+    background: none;
+    width: 100%;
+    transition: background 0.2s;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .sidebar ul li a:hover,
+  .sidebar-link:hover {
+    background: rgba(255, 255, 255, 0.13);
+  }
+
+  .sidebar ul li a .material-icons,
+  .sidebar-link .material-icons {
+    font-size: 1.5rem;
+    margin-right: 12px;
+    min-width: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* =====================
+     ESTILOS PARA MOBILE (até 768px)
+     ===================== */
+  @media (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-100%);
+      width: 250px; /* Largura completa no mobile quando aberto */
+    }
+
+    .sidebar.active {
+      transform: translateX(0);
+    }
+
+    /* Botão que fica fixo para “abrir” o menu no mobile */
+    .sidebar-toggle-btn {
+      display: flex !important;
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 1101;
+      background: #8f7239;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Overlay escuro por trás do menu quando aberto no mobile */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1999;
+    }
+
+    .sidebar.active ~ .sidebar-overlay {
+      display: block;
+    }
+  }
+
+  /* =====================
+     ESTILOS PARA TABLET (769px a 1024px)
+     ===================== */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .sidebar {
+      width: 200px; /* Largura intermediária no tablet */
+    }
+
+    .sidebar ul li a,
+    .sidebar-link {
+      padding: 10px 15px;
+      font-size: 0.9rem;
+    }
+
+    .sidebar ul li a .material-icons,
+    .sidebar-link .material-icons {
+      font-size: 1.3rem;
+      margin-right: 10px;
+    }
+  }
+
+  /* =====================
+     ESTILOS PARA DESKTOP (acima de 1024px)
+     ===================== */
+  @media (min-width: 1025px) {
+    /* Fazemos o sidebar “estreito” por padrão */
+    .sidebar {
+      width: 56px;
+      transition: width 0.3s;
+      justify-content: flex-start;
+    }
+
+    /* Quando o usuário passar o mouse, aumentamos para ver texto + ícones */
+    .sidebar:hover {
+      width: 250px;
+      justify-content: flex-start; /* mantém alinhado ao topo ao expandir */
+    }
+
+    /* 
+      Links “fechados” (sidebar estreito): 
+      aplicamos a mesma regra para <a> e para <button class="sidebar-link">
+    */
+    .sidebar ul li a,
+    .sidebar .sidebar-link {
+      display: flex;
+      align-items: center;
+      height: 56px;
+      padding: 0 12px;              /* Padding estreito para ícones */
+      white-space: nowrap;
+      overflow: hidden;
+      justify-content: flex-start;  /* Ícones à esquerda */
+      transition: padding 0.3s;
+    }
+
+    /* Ícones maiores, mas alinhados à esquerda (quando estreito) */
+    .sidebar .material-icons {
+      font-size: 2rem;
+      margin: 0;    /* remove margin auto */
+      text-align: left;
+      min-width: 32px;
+    }
+
+    /* Oculta o texto (span.sidebar-text) enquanto o menu estiver “fechado” */
+    .sidebar .sidebar-text {
+      display: none;
+      margin-left: 16px;
+      font-size: 1rem;
+      transition: opacity 0.3s;
+      opacity: 0;
+    }
+
+    /* Ao passar o mouse, exibimos o texto e deixamos tudo alinhado à esquerda */
+    .sidebar:hover .sidebar-text {
+      display: inline;
+      opacity: 1;
+    }
+
+    /* Conteúdo principal é empurrado para a direita (56px) enquanto o menu estiver fechado */
+    .content-wrapper {
+      margin-left: 56px;
+      transition: margin-left 0.3s;
+    }
+
+    /* Quando hover no sidebar e ele expande para 250px, empurramos o conteúdo em 250px */
+    .sidebar:hover + .content-wrapper {
+      margin-left: 250px;
+    }
+  }
+</style>
+
+<!-- =========================
+     SCRIPT PARA TOGGLE E ALERT BUTTON
+========================= -->
 <script>
-  function openSidebar() {
-    document.getElementById("sidebar").classList.add("active");
-    document.getElementById("overlay").classList.add("active");
-  }
+  document.addEventListener("DOMContentLoaded", function () {
+    const sidebar = document.getElementById("sidebar");
+    const toggleBtn = document.getElementById("sidebarToggle");
+    const overlay = document.querySelector(".sidebar-overlay");
 
-  function closeSidebar() {
-    document.getElementById("sidebar").classList.remove("active");
-    document.getElementById("overlay").classList.remove("active");
-  }
+    if (toggleBtn && sidebar) {
+      toggleBtn.addEventListener("click", function () {
+        sidebar.classList.toggle("active");
+        if (overlay) {
+          overlay.style.display = sidebar.classList.contains("active") ? "block" : "none";
+        }
+      });
+    }
+
+    if (overlay) {
+      overlay.addEventListener("click", function () {
+        sidebar.classList.remove("active");
+        overlay.style.display = "none";
+      });
+    }
+
+    // Função de log para o botão de alerta
+    function getCookie(name) {
+      let cookieValue = null;
+      document.cookie.split(";").forEach((c) => {
+        const [k, v] = c.trim().split("=");
+        if (k === name) cookieValue = decodeURIComponent(v);
+      });
+      return cookieValue;
+    }
+
+    function log_button_click() {
+      fetch("{% url 'notificar:log_button_click' %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken"),
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({ button: "PANICO" }),
+      });
+    }
+
+    const alertBtn = document.getElementById("alertButton");
+    if (alertBtn) {
+      alertBtn.addEventListener("click", log_button_click);
+    }
+  });
 </script>
-{% endblock content %}

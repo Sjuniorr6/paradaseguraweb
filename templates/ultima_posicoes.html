@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto; padding: 24px;">
+  <h2>Veículos STC no Mapa</h2>
+  <div id="map" style="height: 500px; width: 100%; border-radius: 12px; margin-bottom: 32px;"></div>
+  <h3>Lista de Veículos</h3>
+  <h1 style="color: red;">DEBUG</h1> 
+ 
+  <table style="width:100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr>
+                                            <th>Placa</th>
+        <th>Endereço</th>
+                                            <th>Status</th>
+        <th>Velocidade</th>
+        <th>Bateria</th>
+                                            <th>Última Atualização</th>
+                                        </tr>
+                                    </thead>
+    <tbody id="tabela-veiculos"></tbody>
+                                </table>
+                            </div>
+
+                <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+                <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+                <script>
+document.addEventListener('DOMContentLoaded', function() {
+  var map = L.map('map').setView([-18.6619, -48.1612], 7);
+                  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                      attribution: '© OpenStreetMap contributors'
+                  }).addTo(map);
+
+  var stcIcon = L.icon({
+                                        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                                        iconSize: [25, 41],
+                                        iconAnchor: [12, 41],
+                                        popupAnchor: [1, -34],
+                                        shadowSize: [41, 41]
+                                    });
+                                    
+  function carregarVeiculos() {
+    fetch('/api/stc/veiculos/')
+      .then(response => response.json())
+      .then(data => {
+        if (!data.success || !data.veiculos) {
+          alert('Erro ao buscar veículos!');
+          return;
+        }
+        map.eachLayer(function(layer) {
+          if (layer instanceof L.Marker) map.removeLayer(layer);
+        });
+        document.getElementById('tabela-veiculos').innerHTML = '';
+
+        data.veiculos.forEach(veiculo => {
+          if (!veiculo.latitude || !veiculo.longitude) return;
+          var lat = parseFloat(veiculo.latitude);
+          var lng = parseFloat(veiculo.longitude);
+          if (isNaN(lat) || isNaN(lng)) return;
+
+          var marker = L.marker([lat, lng], {icon: stcIcon}).addTo(map);
+          var popup = `
+            <b>Placa:</b> ${veiculo.nome || 'N/A'}<br>
+            <b>Modelo:</b> ${veiculo.detalhes?.modelo || 'N/A'}<br>
+            <b>Endereço:</b> ${veiculo.endereco || 'N/A'}<br>
+            <b>Status:</b> ${veiculo.detalhes?.status || 'N/A'}<br>
+            <b>Velocidade:</b> ${veiculo.detalhes?.velocidade || '0'} km/h<br>
+            <b>Bateria:</b> ${veiculo.detalhes?.bateria || 'N/A'}<br>
+            <b>Ignição:</b> ${veiculo.detalhes?.ignicao || 'N/A'}<br>
+            <b>GPS Fix:</b> ${veiculo.detalhes?.gpsFix || 'N/A'}<br>
+            <b>Origem Posição:</b> ${veiculo.detalhes?.originPosition || 'N/A'}<br>
+            <b>Última Atualização:</b> ${veiculo.detalhes?.data || 'N/A'}
+          `;
+          marker.bindPopup(popup);
+
+          var row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${veiculo.nome || 'N/A'}</td>
+            <td>${veiculo.endereco || 'N/A'}</td>
+            <td>${veiculo.detalhes?.status || 'N/A'}</td>
+            <td>${veiculo.detalhes?.velocidade || '0'} km/h</td>
+            <td>${veiculo.detalhes?.bateria || 'N/A'}</td>
+            <td>${veiculo.detalhes?.data || 'N/A'}</td>
+          `;
+          document.getElementById('tabela-veiculos').appendChild(row);
+        });
+      })
+      .catch(err => {
+        alert('Erro ao buscar veículos: ' + err);
+      });
+  }
+
+  carregarVeiculos();
+});
+</script>
+{% endblock %} 

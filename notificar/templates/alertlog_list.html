@@ -1,0 +1,179 @@
+{% extends "base.html" %} 
+{% load static %}
+
+{% block extra_css %}
+<!-- Material Icons CDN -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
+<style>
+  /* Estilos do Sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 250px;
+    height: 100vh;
+    background: linear-gradient(to bottom, #f1c46b, #8f7239);
+    box-shadow: 3px 0 10px rgba(0,0,0,0.18);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+  }
+
+  /* Desktop Styles */
+  @media (min-width: 769px) {
+    .sidebar {
+      transform: translateX(-220px);
+      width: 250px;
+    }
+
+    .sidebar:hover {
+      transform: translateX(0);
+    }
+
+    .content {
+      margin-left: 30px;
+    }
+  }
+
+  /* Mobile Styles */
+  @media (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-100%);
+      width: 250px;
+    }
+
+    .sidebar.active {
+      transform: translateX(0);
+    }
+
+    .sidebar-toggle-btn {
+      display: flex !important;
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 1101;
+      background: #8f7239;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.5);
+      z-index: 1999;
+    }
+
+    .sidebar.active ~ .sidebar-overlay {
+      display: block;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- SIDEBAR -->
+{% include "components/components_sidebar.html" %}
+
+<!-- HEADER COM BOTÃO DE MENU -->
+<header>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <button id="sidebarToggle" class="btn btn-link sidebar-toggle-btn d-lg-none" style="font-size: 28px; margin-right: 10px;">
+      <span class="material-icons">menu</span>
+    </button>
+    <a class="navbar-brand" href="{% url 'home' %}">Parada Segura</a>
+  </nav>
+</header>
+
+<div class="content">
+  <div class="container mt-5">
+    <h2 class="mb-4">Histórico de Alertas (Botão)</h2>
+    <table class="table table-bordered table-hover">
+      <thead class="table-light text-center">
+        <tr>
+          <th>Usuário</th>
+          <th>Botão</th>
+          <th>Data / Hora (SP)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in page_obj %}
+        <tr class="text-center">
+          <td>{{ log.user.username }}</td>
+          <td>{{ log.button|default:"-" }}</td>
+          <td>{% if log.timestamp_sp %}{{ log.timestamp_sp|date:"d/m/Y H:i:s" }}{% else %}-{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="3" class="text-center">Nenhum registro encontrado.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Paginação -->
+    <nav aria-label="Paginação de alertas">
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Próxima</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const sidebar = document.getElementById("sidebar");
+  const toggleBtn = document.getElementById("sidebarToggle");
+  let overlay = document.querySelector('.sidebar-overlay');
+  
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'sidebar-overlay';
+    document.body.appendChild(overlay);
+  }
+
+  if (toggleBtn && sidebar) {
+    toggleBtn.addEventListener("click", function () {
+      sidebar.classList.toggle("active");
+      overlay.style.display = sidebar.classList.contains("active") ? 'block' : 'none';
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', function() {
+      sidebar.classList.remove('active');
+      overlay.style.display = 'none';
+    });
+  }
+});
+</script>
+{% endblock %}

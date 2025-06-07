@@ -1,366 +1,443 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% load static %}
-
-{% block title %}
-Mapa de Dispositivos
-{% endblock title %}
-
+{% static "images/caminhao.png" %}
 {% block content %}
-<!-- Container principal que ocupa a tela toda (coluna) -->
-<div class="main-container">
-  <!-- Área do mapa (70% da altura) -->
-  <div id="map-container">
-    <!-- Navbar sobreposta no mapa -->
-    <div class="navbar-overlay">
-      {% include "components/components_sidebar.html" %}
-    </div>
-    <div id="map"></div>
-  </div>
-
-  <!-- Área da tabela (30% da altura) -->
-  <div id="info-container">
-    <h2>Informações dos Dispositivos</h2>
-    <div class="table-wrapper">
-      <table id="devices-table">
-        <thead>
-          <tr>
-            <th>Tipo</th>
-            <th>ID</th>
-            <th>Data e Hora</th>
-            <th>Bateria</th>
-            <th>Latitude</th>
-            <th>Longitude</th>
-            <th>Cerca</th>
-          </tr>
-        </thead>
-        <tbody id="devices-table-body">
-          <!-- Linhas serão adicionadas dinamicamente -->
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- Leaflet CSS/JS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+{% include "components/components_sidebar.html" %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
-  /* Reset básico: ocupar tela inteira */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
   html, body {
+    width: 100vw;
+    height: 100vh;
     margin: 0;
     padding: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  /* Layout em coluna (mapa em cima, tabela embaixo) */
-  .main-container {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100vh; /* preenche toda a janela */
-    overflow: hidden;
-  }
-
-  /* Mapa ocupa 70% da altura */
-  #map-container {
-    position: relative;
-    flex: 7; /* 70% */
-    border-bottom: 2px solid #ddd;
+    font-family: 'Poppins', sans-serif;
+    background-color: #f0f2f5;
+    overflow-x: hidden;
+    overflow-y: hidden;
   }
 
   #map {
-    width: 100%;
-    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    min-width: 100vw !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    z-index: 1;
   }
 
-  /* Navbar sobreposta no mapa */
-  .navbar-overlay {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 9999;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 10px;
-    border-radius: 4px;
-  }
-
-  /* Tabela ocupa 30% da altura */
-  #info-container {
-    flex: 3; /* 30% */
-    background: #fff;
-    padding: 20px;
+  #notifications {
+    position: fixed;
+    top: 85px;
+    right: 20px;
+    z-index: 1000;
+    max-height: calc(100vh - 105px);
     overflow-y: auto;
+    padding-right: 5px;
   }
 
-  #info-container h2 {
-    font-size: 18px;
-    margin-bottom: 10px;
+  .leaflet-container {
+    background: #eaeaea;
   }
 
-  .table-wrapper {
-    width: 100%;
-    overflow-x: auto;
+  #map-title {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1002;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
+    padding: 12px 30px;
+    border-radius: 12px;
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #333;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    border: 1px solid rgba(0,0,0,0.05);
+    white-space: nowrap;
+    pointer-events: none;
   }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
+  .notification-item {
+    background: white;
+    border-left-width: 5px;
+    border-left-style: solid;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    margin-bottom: 12px;
+    padding: 18px;
+    border-radius: 6px;
+    max-width: 350px;
+    animation: slideIn 0.5s ease-out;
+    display: flex;
+    align-items: center;
+  }
+  .notification-item.primary {
+    border-left-color: #4CAF50;
+  }
+  .notification-item.secondary {
+    border-left-color: #FFC107;
+  }
+  .notification-item img {
+    width: 32px;
+    height: 32px;
+    margin-right: 15px;
+    flex-shrink: 0;
+  }
+  .notification-content strong {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #222;
+    display: block;
+    margin-bottom: 3px;
+  }
+  .notification-content p {
+    margin: 6px 0;
+    font-size: 0.95rem;
+    color: #555;
+    line-height: 1.4;
+  }
+  .notification-content small {
+    font-size: 0.8rem;
+    color: #777;
+    margin-top: 8px;
+    display: block;
+  }
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
   }
 
-  table, th, td {
-    border: 1px solid #ddd;
-  }
-
-  th, td {
-    padding: 8px;
-    text-align: left;
-  }
-
-  th {
-    background-color: #f2f2f2;
-  }
-
-  tr.clickable {
-    cursor: pointer;
-  }
-
-  /* Responsividade para mobile */
-  @media (max-width: 768px) {
-    #info-container {
-      padding: 10px;
+  /* RESPONSIVIDADE MOBILE (apenas para elementos do mapa, não sidebar) */
+  @media (max-width: 600px) {
+    #map-title {
+      font-size: 1.05rem;
+      padding: 8px 10px;
+      border-radius: 8px;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: 90vw;
+      white-space: normal;
     }
-    table {
-      font-size: 12px;
+    #alert-bell {
+      top: 12px;
+      right: 10px;
+      width: 38px;
+      height: 38px;
     }
-    th, td {
-      padding: 6px;
+    #alert-bell svg {
+      width: 22px;
+      height: 22px;
     }
-    .navbar-overlay {
-      top: 5px;
-      left: 5px;
-      padding: 5px;
+    #alert-badge {
+      top: 2px;
+      right: 2px;
+      font-size: 0.7rem;
+      padding: 1px 5px;
+    }
+    #notifications {
+      top: 60px;
+      right: 2vw;
+      max-width: 96vw;
+      min-width: 0;
+      padding-right: 0;
+    }
+    .notification-item {
+      max-width: 96vw;
+      padding: 12px 8px 12px 8px;
+      font-size: 0.98rem;
+      border-radius: 5px;
+    }
+    .notification-item img {
+      width: 24px;
+      height: 24px;
+      margin-right: 8px;
+    }
+    .notification-content strong {
+      font-size: 1rem;
+    }
+    .notification-content p {
+      font-size: 0.92rem;
+    }
+    .notification-content small {
+      font-size: 0.7rem;
+    }
+  }
+  @media (max-width: 400px) {
+    #map-title {
+      font-size: 0.95rem;
+      padding: 6px 4px;
+    }
+    .notification-item {
+      font-size: 0.92rem;
+      padding: 8px 4px 8px 4px;
     }
   }
 </style>
 
+<div id="map-title">Dispositivos e Veículos no Mapa</div>
+<div id="map"></div>
+<!-- Ícone de sino para abrir notificações -->
+<div id="alert-bell" style="position: fixed; top: 24px; right: 32px; z-index: 1100; cursor: pointer; background: white; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.10); width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
+  <svg id="bell-svg" xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: #555;">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+  </svg>
+  <span id="alert-badge" style="position: absolute; top: 10px; right: 10px; background: #e53935; color: white; font-size: 0.85rem; font-weight: bold; border-radius: 50%; padding: 2px 7px; display: none;">0</span>
+</div>
+<div id="notifications" style="display: none;"></div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-  // Converte datetime do formato "YYYYMMDDHHMMSS" para "DD/MM/AAAA HH:MM"
-  function convertDatetime(datetimeStr) {
-    if (datetimeStr && datetimeStr.length === 14) {
-      const year = datetimeStr.slice(0, 4);
-      const month = datetimeStr.slice(4, 6);
-      const day = datetimeStr.slice(6, 8);
-      const hours = datetimeStr.slice(8, 10);
-      const minutes = datetimeStr.slice(10, 12);
-      return `${day}/${month}/${year} ${hours}:${minutes}`;
+document.addEventListener('DOMContentLoaded', function() {
+  // Configuração do WebSocket (sem alterações)
+  const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+  const ws_path = ws_scheme + '://' + window.location.host + '/ws/notifications/';
+  const socket = new WebSocket(ws_path);
+
+  socket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    if (data.type === 'notification_message' || data.type === 'notification') {
+      showNotification(data.message);
     }
-    return datetimeStr;
-  }
+  };
 
-  // Converte tensão em percentual
-  function voltageToPercentage(voltage) {
-    var minV = 3.5, maxV = 4.2;
-    var perc = ((voltage - minV) / (maxV - minV)) * 100;
-    perc = Math.max(0, Math.min(100, perc));
-    return Math.round(perc) + '%';
-  }
+  socket.onclose = function(e) {
+    console.error('WebSocket fechado inesperadamente');
+  };
 
-  // Reverse Geocoding via Nominatim
-  function reverseGeocode(lat, lng, callback) {
-    var url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
-    fetch(url, {
-      headers: {
-        'User-Agent': 'SeuApp/1.0 (seuemail@dominio.com)'
-      }
-    })
-    .then(response => response.json())
-    .then(data => {
-      callback(data.display_name || "Endereço não encontrado");
-    })
-    .catch(error => {
-      console.error("Erro no reverse geocoding:", error);
-      callback("Erro ao obter endereço");
-    });
-  }
+  let alertCount = 0;
+  const bell = document.getElementById('alert-bell');
+  const notificationsPanel = document.getElementById('notifications');
+  const badge = document.getElementById('alert-badge');
 
-  // Determina a cerca em que o dispositivo se encontra
-  function getDeviceFence(lat, lng, geofences) {
-    let matchingFences = [];
-    geofences.forEach(function(fence) {
-      if (!fence.center || !fence.radius) return;
-      var distance = L.latLng(lat, lng).distanceTo(L.latLng(fence.center[0], fence.center[1]));
-      if (distance <= fence.radius) {
-        matchingFences.push({name: fence.name, distance: distance});
-      }
-    });
-    if (matchingFences.length > 0) {
-      matchingFences.sort((a, b) => a.distance - b.distance);
-      return matchingFences[0].name;
+  bell.onclick = function() {
+    if (notificationsPanel.style.display === 'none') {
+      notificationsPanel.style.display = 'block';
+      badge.style.display = 'none';
+      alertCount = 0;
+    } else {
+      notificationsPanel.style.display = 'none';
     }
-    return "Sem Cerca";
+  };
+
+  function showNotification(message) {
+    const notificationDiv = document.createElement('div');
+    notificationDiv.classList.add('notification-item');
+    notificationDiv.classList.add(message.geofence_type === 'Primario' ? 'primary' : 'secondary');
+
+    // Botão de fechar
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '&times;';
+    closeBtn.style.cssText = `
+      background: transparent;
+      border: none;
+      color: #888;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 10px;
+      margin-right: 0;
+      margin-top: -8px;
+      align-self: flex-start;
+    `;
+    closeBtn.onclick = function() {
+      notificationDiv.style.animation = 'slideOut 0.5s ease-out forwards';
+      setTimeout(() => notificationDiv.remove(), 500);
+      updateBadge();
+    };
+
+    notificationDiv.innerHTML = `
+        <img src="${message.image || '{% static "images/default-icon.png" %}'}" alt="Ícone">
+        <div class="notification-content">
+          <strong>${message.title || 'Notificação'}</strong>
+          <p>${message.text || 'Detalhes não disponíveis.'}</p>
+          <p>Status: ${message.status || 'N/A'}</p>
+          <small>${new Date(message.timestamp).toLocaleString()}</small>
+        </div>
+    `;
+    notificationDiv.appendChild(closeBtn);
+
+    notificationsPanel.appendChild(notificationDiv);
+    alertCount++;
+    updateBadge();
   }
 
-  // Inicializa o mapa
-  var map = L.map('map').setView([-23.5505, -46.6333], 6);
+  function updateBadge() {
+    const count = notificationsPanel.querySelectorAll('.notification-item').length;
+    if (count > 0 && notificationsPanel.style.display === 'none') {
+      badge.textContent = count;
+      badge.style.display = 'block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // Mapa e Marcadores (sem alterações significativas na lógica, apenas nos ícones se necessário)
+  var map = L.map('map').setView([-18.6619, -48.1612], 7);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18,
-    attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+    attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  // Ícones menores para Cadeado (lock) e Isca (circuit-board)
-  var lockIcon = new L.Icon({
-    iconUrl: "{% static 'images/lock.png' %}",
-    iconSize: [30, 45],         // Ícone menor
-    iconAnchor: [15, 45],       // Ajuste o anchor para centralizar
-    popupAnchor: [0, -35],      // Ajuste se necessário
-    shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
-    shadowSize: [40, 40]        // Sombras proporcionais
-  });
-
-  var circuitBoardIcon = new L.Icon({
-    iconUrl: "{% static 'images/circuit-board.png' %}",
-    iconSize: [30, 45],         // Ícone menor
-    iconAnchor: [15, 45],
+  // Ícones (mantidos como no original)
+  var t42Icon = L.icon({
+    iconUrl: '{% static "images/lock.png" %}',
+    iconSize: [48, 72],
+    iconAnchor: [24, 72],
     popupAnchor: [0, -35],
-    shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    shadowSize: [40, 40]
+  });
+  var stcIscaIcon = L.icon({
+    iconUrl: '{% static "images/circuit-board.png" %}',
+    iconSize: [48, 72],
+    iconAnchor: [24, 72],
+    popupAnchor: [0, -35],
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    shadowSize: [40, 40]
+  });
+  var stcVeiculoIcon = L.icon({
+    iconUrl: '{% static "images/caminhao.png" %}',
+    iconSize: [90, 50],
+    iconAnchor: [24, 72],
+    popupAnchor: [0, -35],
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
     shadowSize: [40, 40]
   });
 
-  // Camadas para marcadores e cercas
   var markersLayer = L.layerGroup().addTo(map);
   var fencesLayer = L.layerGroup().addTo(map);
-  var markersDict = {};
 
-  // Exibe somente o marcador selecionado
-  function exibirSomenteMarker(id, lat, lng) {
-    markersLayer.clearLayers();
-    if (markersDict[id]) {
-      markersLayer.addLayer(markersDict[id]);
-      map.panTo([lat, lng]);
-      markersDict[id].openPopup();
-    }
-  }
-
-  // Restaura todos os marcadores (recarrega os dados)
-  function restaurarMarcadores() {
-    atualizarDados();
-  }
-
-  // Função principal para buscar dados
-  function atualizarDados() {
-    fetch("{% url 'get_devices_data' %}")
+  function carregarDispositivos() {
+    fetch('/service/get_devices_data/')
       .then(response => response.json())
       .then(data => {
-        // Limpa camadas e tabela
         markersLayer.clearLayers();
         fencesLayer.clearLayers();
-        var tableBody = document.getElementById('devices-table-body');
-        tableBody.innerHTML = "";
-        markersDict = {};
 
-        // Função para adicionar um dispositivo
-        function adicionarDispositivo(device, tipo, icon) {
-          if (!device.latitude || !device.longitude) return;
-          var lat = parseFloat(device.latitude);
-          var lng = parseFloat(device.longitude);
-          var idDevice = (tipo === "Cadeado") ? (device.unitnumber || device.deviceId) : device.deviceId;
-          
-          var marker = L.marker([lat, lng], {icon: icon}).addTo(markersLayer);
-          markersDict[idDevice] = marker;
-
-          var cercaCalculada = getDeviceFence(lat, lng, data.geofences);
-
-          marker.bindPopup(`
-            <strong>${tipo}:</strong> ${idDevice}<br>
-            <strong>Bateria:</strong> ${(tipo === "Cadeado")
-              ? (device.main_voltage ? voltageToPercentage(parseFloat(device.main_voltage)) : "N/A")
-              : (device.batteryPercentual || "N/A")}<br>
-            <strong>Localização:</strong> ${lat}, ${lng}<br>
-            <strong>Endereço:</strong> Carregando...<br>
-            <strong>Cerca:</strong> ${cercaCalculada}
-          `);
-
-          reverseGeocode(lat, lng, function(endereco) {
-            marker.setPopupContent(`
-              <strong>${tipo}:</strong> ${idDevice}<br>
-              <strong>Bateria:</strong> ${(tipo === "Cadeado")
-                ? (device.main_voltage ? voltageToPercentage(parseFloat(device.main_voltage)) : "N/A")
-                : (device.batteryPercentual || "N/A")}<br>
-              <strong>Localização:</strong> ${lat}, ${lng}<br>
-              <strong>Endereço:</strong> ${endereco}<br>
-              <strong>Cerca:</strong> ${cercaCalculada}
-            `);
+        // Cercas
+        if (data.geofences) {
+          data.geofences.forEach(fence => {
+            if (!fence.center || !fence.radius) return;
+            var circle = L.circle(fence.center, {
+              color: 'green',
+              fillColor: '#008000',
+              fillOpacity: 0.2,
+              radius: fence.radius
+            }).addTo(fencesLayer);
+            circle.bindPopup(`<strong>${fence.name}</strong><br>Raio: ${fence.radius/1000} km`);
           });
-
-          // Linha na tabela
-          var row = document.createElement('tr');
-          row.classList.add('clickable');
-          row.setAttribute('data-device-id', idDevice);
-          row.setAttribute('data-lat', lat);
-          row.setAttribute('data-lng', lng);
-          row.innerHTML = `
-            <td>${tipo}</td>
-            <td>${idDevice}</td>
-            <td>${convertDatetime(device.datetime_utc || device.date) || 'H:I'}</td>
-            <td>${(tipo === "Cadeado")
-              ? (device.main_voltage ? voltageToPercentage(parseFloat(device.main_voltage)) : "N/A")
-              : (device.batteryPercentual || "N/A")}</td>
-            <td>${device.latitude}</td>
-            <td>${device.longitude}</td>
-            <td>${cercaCalculada}</td>
-          `;
-          row.addEventListener('click', function(event) {
-            event.stopPropagation();
-            var id = this.getAttribute('data-device-id');
-            var latValue = parseFloat(this.getAttribute('data-lat'));
-            var lngValue = parseFloat(this.getAttribute('data-lng'));
-            exibirSomenteMarker(id, latValue, lngValue);
-          });
-          tableBody.appendChild(row);
         }
 
-        // Processa dispositivos T42 (Cadeado) -> lockIcon
-        data.t42_devices.forEach(device => {
-          adicionarDispositivo(device, "Cadeado", lockIcon);
-        });
+        // T42 (Cadeado)
+        if (data.t42_devices) {
+          data.t42_devices.forEach(device => {
+            if (!device.latitude || !device.longitude) return;
+            var lat = parseFloat(device.latitude);
+            var lng = parseFloat(device.longitude);
+            if (isNaN(lat) || isNaN(lng)) return;
+            var id = device.unitnumber || 'N/A';
+            var marker = L.marker([lat, lng], {icon: t42Icon}).addTo(markersLayer);
+            var popupContent = `<b>Cadeado (T42)</b><br>ID: ${id}<br>Bateria: ${device.main_voltage || 'N/A'}<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}}`;
+            marker.bindPopup(popupContent);
+          });
+        }
 
-        // Processa dispositivos STC (Isca) -> circuitBoardIcon
-        data.stc_devices.forEach(device => {
-          adicionarDispositivo(device, "Isca", circuitBoardIcon);
-        });
+        // STC Equipamentos (Isca) e Veículos STC
+        if (data.stc_devices) {
+          data.stc_devices.forEach(device => {
+            if (!device.latitude || !device.longitude) return;
+            var lat = parseFloat(device.latitude);
+            var lng = parseFloat(device.longitude);
+            if (isNaN(lat) || isNaN(lng)) return;
 
-        // Adiciona as cercas
-        data.geofences.forEach(fence => {
-          if (!fence.center || !fence.radius) {
-            console.error("❌ ERRO: Cerca inválida", fence);
-            return;
-          }
-          var circle = L.circle(fence.center, {
-            color: 'green',
-            fillColor: '#008000',
-            fillOpacity: 0.3,
-            radius: fence.radius
-          }).addTo(fencesLayer);
-          circle.bindPopup(`<strong>${fence.name}</strong><br>Raio: ${fence.radius / 1000} km`);
-        });
+            if (device.detalhes && device.detalhes.placa) {
+              // Veículo STC
+              var marker = L.marker([lat, lng], {icon: stcVeiculoIcon}).addTo(markersLayer);
+              var detalhes = device.detalhes;
+              var popupContent = `
+                <b>Veículo STC</b><br>
+                Placa: ${detalhes.placa || device.nome || 'N/A'}<br>
+                Modelo: ${detalhes.modelo || 'N/A'}<br>
+                Endereço: ${device.endereco || 'N/A'}<br>
+                Status: ${detalhes.status || 'N/A'}<br>
+                Velocidade: ${detalhes.velocidade || '0'} km/h<br>
+                Bateria: ${detalhes.bateria || 'N/A'}<br>
+                Ignição: ${detalhes.ignicao || 'N/A'}<br>
+                GPS Fix: ${detalhes.gpsFix || 'N/A'}<br>
+                Origem Posição: ${detalhes.originPosition || 'N/A'}<br>
+                Última Atualização: ${detalhes.data || 'N/A'}<br>
+                <b>Empresa:</b> ${device.empresa || detalhes.empresa || 'N/A'}<br>
+              `;
+              marker.bindPopup(popupContent);
+            } else {
+              // Equipamento STC (isca)
+              var marker = L.marker([lat, lng], {icon: stcIscaIcon}).addTo(markersLayer);
+              var id = device.deviceId || 'N/A';
+              var popupContent = `<b>Isca (STC)</b><br>ID: ${id}<br>Bateria: ${device.batteryPercentual || 'N/A'}<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}}`;
+              marker.bindPopup(popupContent);
+            }
+          });
+        }
+
+        // Veículos Trafegus
+        if (data.trafegus_devices) {
+          data.trafegus_devices.forEach(device => {
+            if (!device.latitude || !device.longitude) return;
+            var lat = parseFloat(device.latitude);
+            var lng = parseFloat(device.longitude);
+            if (isNaN(lat) || isNaN(lng)) return;
+
+            var marker = L.marker([lat, lng], {icon: stcVeiculoIcon}).addTo(markersLayer);
+            var detalhes = device.detalhes || {};
+            var popupContent = `
+              <b>Veículo Trafegus</b><br>
+              Placa: ${detalhes.placa || 'N/A'}<br>
+              ${(detalhes.placaCarreta ? `Placa Carreta: ${detalhes.placaCarreta}<br>` : '')}
+              Motorista: ${detalhes.motorista || 'N/A'}<br>
+              Status: ${detalhes.statusCarga || 'N/A'}<br>
+              Local: ${detalhes.descricaoLocal || 'N/A'}<br>
+              Última Atualização: ${detalhes.dataPosicao || 'N/A'}<br>
+              <b>Empresa:</b> ${detalhes.empresa || 'N/A'}<br>
+            `;
+            if (detalhes.contatoMotorista && detalhes.contatoMotorista.length > 0) {
+              popupContent += '<br><b>Contatos:</b><br>' + detalhes.contatoMotorista.map(contato => `${contato.texto}: ${contato.telefone}`).join('<br>');
+            }
+            if (detalhes.notasFiscais && detalhes.notasFiscais.length > 0) {
+              popupContent += '<br><b>Notas Fiscais:</b><br>' + detalhes.notasFiscais.map(nota => nota.numero).join('<br>');
+            }
+            marker.bindPopup(popupContent);
+          });
+        }
+
+        // Carregar veículos da API Trafegus
+        //carregarVeiculosTrafegus(); // Removido para evitar duplicidade
       })
-      .catch(error => {
-        console.error("❌ ERRO AO ATUALIZAR DADOS:", error);
+      .catch(err => {
+        console.error('Erro ao buscar dispositivos:', err);
+        // alert('Erro ao buscar dispositivos: ' + err);
       });
   }
 
-  // Inicia
-  atualizarDados();
-  setInterval(atualizarDados, 90000);
-
-  // Se clicar fora de uma linha, restaura todos os marcadores
-  document.addEventListener('click', function(event) {
-    if (!event.target.closest('tr.clickable')) {
-      restaurarMarcadores();
-    }
-  });
+  // Carrega inicialmente e depois a cada 60 segundos
+  carregarDispositivos();
+  setInterval(carregarDispositivos, 60000);
+});
 </script>
-{% endblock content %}
+{% endblock %}

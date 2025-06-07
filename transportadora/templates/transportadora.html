@@ -3,6 +3,74 @@
 
 {% block content %}
 {% include "components/components_sidebar.html" %}
+<Style>
+  /* Container principal: mais espaçamento e visual suave */
+.container {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+/* Card personalizado */
+.card {
+  border-radius: 10px;
+  overflow: hidden;
+  border: none;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
+}
+
+/* Header do card: estilizado com degradê dourado parecido com sidebar */
+.card-header {
+  background: linear-gradient(160deg, #8F7239, #8F7239);
+  text-align: center;
+}
+
+.card-header h2 {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+/* Ajuste visual dos inputs do formulário */
+.card-body input[type="text"],
+.card-body input[type="email"],
+.card-body select,
+.card-body textarea {
+  border-radius: 5px;
+  border: 1px solid #ced4da;
+  padding: 10px;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.card-body label {
+  font-weight: 500;
+  color: #495057;
+}
+
+/* Botão estilizado */
+.btn-success {
+  background-color: #198754;
+  border-color: #157347;
+  padding: 10px;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+  background-color: #157347;
+  border-color: #146c43;
+  transform: translateY(-2px);
+}
+
+/* Ajustes para responsividade */
+@media (max-width: 768px) {
+  .card {
+    width: 90%;
+    margin: auto;
+  }
+}
+
+</Style>
 <div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
   <!-- Card com sombra -->
   <div class="card shadow" style="max-width: 500px; width: 100%;">

@@ -104,3 +104,4 @@ class ParadaseguraPontoForm(forms.ModelForm):
     class Meta:
         model = paradasegura_ponto
         fields = ['fotos']
+

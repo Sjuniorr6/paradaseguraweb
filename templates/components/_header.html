@@ -1,0 +1,54 @@
+<header class="navbar">
+    <nav>
+      <div class="scroll-container">
+          <span class="scroll-text">GS PARADA SEGURA</span>
+      </div>
+    </nav>
+</header>
+
+<style>
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 45px;
+    background: linear-gradient(to bottom, #7a5e2fc9, #927138c9);
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    position: fixed;
+    width: 100%;
+    left: 0;
+    top: 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+}
+
+.scroll-container {
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.scroll-text {
+    display: inline-block;
+    animation: scrollText 20s linear infinite;
+}
+
+@keyframes scrollText {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        height: 40px;
+        font-size: 16px;
+    }
+    
+    .scroll-text {
+        font-size: 16px;
+    }
+}
+</style>
