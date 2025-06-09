@@ -16,7 +16,7 @@ STATICFILES_DIRS = [
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('login/', include('login.urls')),
+    path('', include('login.urls')),
     path('home/', include('home.urls')),
     path('pparada/', include('pparada.urls')),
     path('service/', include('service.urls')),
