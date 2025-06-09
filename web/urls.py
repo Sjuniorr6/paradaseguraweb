@@ -6,6 +6,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 import os
 from pathlib import Path
+from django.shortcuts import redirect
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -16,7 +17,8 @@ STATICFILES_DIRS = [
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('login.urls')),
+    path('', lambda request: redirect('login/', permanent=False)),
+    path('login/', include('login.urls')),
     path('home/', include('home.urls')),
     path('pparada/', include('pparada.urls')),
     path('service/', include('service.urls')),
