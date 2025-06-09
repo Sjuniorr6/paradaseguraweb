@@ -2,5 +2,8 @@ venv/
 env/
 .venv/pi
 db.sqlite3
-login.gif
-login1.gif
+*.pyc
+__pycache__/
+static/images/login.gif
+static/images/login1.gif
+.env
