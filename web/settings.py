@@ -26,13 +26,13 @@ SECRET_KEY = 'django-insecure-q5-hk(d@nzo8+9ku-y+2^s$8!ygh!3c2r6u8vuz^-+q1q3r3^%
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-ALLOWED_HOSTS = ['gsparadaweb.com.br', 'www.gsparadaweb.com.br', '3.228.200.4']
+ALLOWED_HOSTS = ['gsparadaweb.com.br', 'www.gsparadaweb.com.br', '3.228.200.4','127.0.0.1']
 
 
 # Application definition
 
 LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/home/'
+LOGIN_REDIRECT_URL = '/home/home/'
 LOGOUT_REDIRECT_URL = '/login/'
 
 
