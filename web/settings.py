@@ -32,7 +32,7 @@ ALLOWED_HOSTS = ['gsparadaweb.com.br', 'www.gsparadaweb.com.br', '3.228.200.4','
 # Application definition
 
 LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/home/home/'
+LOGIN_REDIRECT_URL = '/home/'
 LOGOUT_REDIRECT_URL = '/login/'
 
 
