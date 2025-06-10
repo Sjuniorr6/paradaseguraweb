@@ -547,34 +547,25 @@ def ultima_posicao_veiculos(request):
     
     # 🚧 Cercas geográficas (mesmas do get_devices_data)
     geofences = [
-        {"name": "Posto(1)Primario", "center": [-22.10141479570105, -47.8242335993846], "radius": 50000},  # 5 km
-        {"name": "posto(1) Secundario", "center": [-22.10141479570105, -47.8242335993846], "radius": 10000},  # 100m
-        {"name": "Posto(2)Primario", "center": [ -21.775,  -47.5381], "radius": 50000},  # 5 km
-        {"name": "posto(2) Secundario", "center": [ -21.775,  -47.5381],"radius": 10000},  # 100m
-        {"name": "Posto(3)Primario", "center": [ -21.3648,  -48.7574], "radius": 50000},  # 5 km
-        {"name": "posto(3) Secundario", "center": [ -21.3648,  -48.7574],"radius": 10000},  # 100m
-        {"name": "Posto(4)Primario", "center": [ -20.5542,  -49.7085], "radius": 50000},  # 5 km
-        {"name": "posto(4) Secundario", "center": [ -20.5542,  -49.7085],"radius": 10000},  # 100m
-        {"name": "Posto(5)Primario", "center": [ -20.5334,  -47.846], "radius": 50000},  # 5 km
-        {"name": "posto(5) Secundario", "center": [ -20.5334,  -47.846],"radius": 10000},  # 100m
-        {"name": "Posto(1)Primario", "center": [-22.10141479570105, -47.8242335993846], "radius": 5000},  # 5 km
-        {"name": "posto(1) Secundario", "center": [-22.10141479570105, -47.8242335993846], "radius": 150},  # 100m
-        {"name": "Posto(2)Primario", "center": [ -21.775,  -47.5381], "radius": 5000},  # 5 km
-        {"name": "posto(2) Secundario", "center": [ -21.775,  -47.5381],"radius": 150},  # 100m
-        {"name": "Posto(3)Primario", "center": [ -21.3648,  -48.7574], "radius": 5000},  # 5 km
-        {"name": "posto(3) Secundario", "center": [ -21.3648,  -48.7574],"radius": 200},  # 100m
-        {"name": "Posto(4)Primario", "center": [ -20.5542,  -49.7085], "radius": 5000},  # 5 km
-        {"name": "posto(4) Secundario", "center": [ -20.5542,  -49.7085],"radius": 200},  # 100m
-        {"name": "Posto(5)Primario", "center": [ -20.5334,  -47.846], "radius": 5000},  # 5 km
-        {"name": "posto(5) Secundario", "center": [ -20.5334,  -47.846],"radius": 200},  # 100m
-        {"name": "Posto(6)Primario", "center": [ -18.8786,  -49.0557], "radius": 5000},  # 5 km
-        {"name": "posto(6) Secundario", "center": [ -18.8786,  -49.0557],"radius": 200},  # 100m
-        {"name": "Posto(7)Primario", "center": [  -18.661527,  -48.161337], "radius": 5000},  # 5 km
-        {"name": "posto(7) Secundario", "center": [  -18.661527,  -48.161337],"radius": 200},  # 100m
-     
- 
+        
+                {"nome": "Posto Graal Rubi", "latitude": -22.10141479570105, "longitude": -47.8242335993846, "raio": 5000},
+                {"nome": "Posto Graal Rubi2", "latitude": -22.10141479570105, "longitude": -47.8242335993846, "raio": 150},
+                {"nome": "Posto Da Serra", "latitude": -21.775, "longitude": -47.5381, "raio": 5000},
+                {"nome": "Posto Da Serra2", "latitude": -21.775, "longitude": -47.5381, "raio": 150},
+                {"nome": "Posto Capixabom", "latitude": -21.3648, "longitude": -48.7574, "raio": 5000},
+                {"nome": "posto Capixabom 2", "latitude": -21.3648, "longitude": -48.7574, "raio": 200},
+                {"nome": "Posto JN", "latitude": -20.5542, "longitude": -49.7085, "raio": 5000},
+                {"nome": "Posto JN2", "latitude": -20.5542, "longitude": -49.7085, "raio": 200},
+                {"nome": "Posto Buritizinho", "latitude": -20.5334, "longitude": -47.846, "raio": 5000},
+                {"nome": "posto Posto Buritizinho2", "latitude": -20.5334, "longitude": -47.846, "raio": 200},
+                {"nome": "Posto Trevao", "latitude": -18.8786, "longitude": -49.0557, "raio": 5000},
+                {"nome": "posto Trevao2", "latitude": -18.8786, "longitude": -49.0557, "raio": 200},
+                {"nome": "Posto Brasileirao", "latitude": -18.661527, "longitude": -48.161337, "raio": 5000},
+                {"nome": "posto Brasileirao2", "latitude": -18.661527, "longitude": -48.161337, "raio": 200},
+            ]
+            
        
-    ]
+    
 
     # Filtra apenas os veículos que estão dentro das cercas
     veiculos_em_cercas = []

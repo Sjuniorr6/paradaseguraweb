@@ -329,7 +329,7 @@
     (function () {
       const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
       const socket = new WebSocket(
-        wsProtocol + "://" + window.location.host + "/notifications/"
+        wsProtocol + "://" + window.location.host + "/ws/notifications/"
       );
 
       // Função para salvar alertas no localStorage

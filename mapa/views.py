@@ -430,20 +430,20 @@ class TrafegusVeiculoView(View):
             
             # --- CERCAS ---
             cercas = [
-                {"nome": "Posto(1)Primario", "latitude": -22.10141479570105, "longitude": -47.8242335993846, "raio": 5000},
-                {"nome": "posto(1) Secundario", "latitude": -22.10141479570105, "longitude": -47.8242335993846, "raio": 150},
-                {"nome": "Posto(2)Primario", "latitude": -21.775, "longitude": -47.5381, "raio": 5000},
-                {"nome": "posto(2) Secundario", "latitude": -21.775, "longitude": -47.5381, "raio": 150},
-                {"nome": "Posto(3)Primario", "latitude": -21.3648, "longitude": -48.7574, "raio": 5000},
-                {"nome": "posto(3) Secundario", "latitude": -21.3648, "longitude": -48.7574, "raio": 200},
-                {"nome": "Posto(4)Primario", "latitude": -20.5542, "longitude": -49.7085, "raio": 5000},
-                {"nome": "posto(4) Secundario", "latitude": -20.5542, "longitude": -49.7085, "raio": 200},
-                {"nome": "Posto(5)Primario", "latitude": -20.5334, "longitude": -47.846, "raio": 5000},
-                {"nome": "posto(5) Secundario", "latitude": -20.5334, "longitude": -47.846, "raio": 200},
-                {"nome": "Posto(6)Primario", "latitude": -18.8786, "longitude": -49.0557, "raio": 5000},
-                {"nome": "posto(6) Secundario", "latitude": -18.8786, "longitude": -49.0557, "raio": 200},
-                {"nome": "Posto(7)Primario", "latitude": -18.661527, "longitude": -48.161337, "raio": 5000},
-                {"nome": "posto(7) Secundario", "latitude": -18.661527, "longitude": -48.161337, "raio": 200},
+                {"nome": "Posto Graal Rubi", "latitude": -22.10141479570105, "longitude": -47.8242335993846, "raio": 5000},
+                {"nome": "Posto Graal Rubi2", "latitude": -22.10141479570105, "longitude": -47.8242335993846, "raio": 150},
+                {"nome": "Posto Da Serra", "latitude": -21.775, "longitude": -47.5381, "raio": 5000},
+                {"nome": "Posto Da Serra2", "latitude": -21.775, "longitude": -47.5381, "raio": 150},
+                {"nome": "Posto Capixabom", "latitude": -21.3648, "longitude": -48.7574, "raio": 5000},
+                {"nome": "posto Capixabom 2", "latitude": -21.3648, "longitude": -48.7574, "raio": 200},
+                {"nome": "Posto JN", "latitude": -20.5542, "longitude": -49.7085, "raio": 5000},
+                {"nome": "Posto JN2", "latitude": -20.5542, "longitude": -49.7085, "raio": 200},
+                {"nome": "Posto Buritizinho", "latitude": -20.5334, "longitude": -47.846, "raio": 5000},
+                {"nome": "posto Posto Buritizinho2", "latitude": -20.5334, "longitude": -47.846, "raio": 200},
+                {"nome": "Posto Trevao", "latitude": -18.8786, "longitude": -49.0557, "raio": 5000},
+                {"nome": "posto Trevao2", "latitude": -18.8786, "longitude": -49.0557, "raio": 200},
+                {"nome": "Posto Brasileirao", "latitude": -18.661527, "longitude": -48.161337, "raio": 5000},
+                {"nome": "posto Brasileirao2", "latitude": -18.661527, "longitude": -48.161337, "raio": 200},
             ]
             
             # --- EQUIPAMENTOS DO BANCO ---
