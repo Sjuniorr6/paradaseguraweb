@@ -2,6 +2,7 @@
 {% load static %}
 {% static "images/caminhao.png" %}
 {% block content %}
+{% include "components/components_sidebar.html" %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
@@ -49,6 +50,7 @@
   .leaflet-container {
     background: #eaeaea;
   }
+
 
   #map-title {
     position: fixed;
@@ -192,8 +194,251 @@
 
 <div id="map-title">Dispositivos e Veículos no Mapa</div>
 <div id="map"></div>
+<!-- Ícone de sino para abrir notificações -->
+<div id="alert-bell" style="position: fixed; top: 24px; right: 32px; z-index: 1100; cursor: pointer; background: white; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.10); width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
+  <svg id="bell-svg" xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: #555;">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+  </svg>
+  <span id="alert-badge" style="position: absolute; top: 10px; right: 10px; background: #e53935; color: white; font-size: 0.85rem; font-weight: bold; border-radius: 50%; padding: 2px 7px; display: none;">0</span>
+</div>
+<div id="notifications" style="display: none;"></div>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Configuração do WebSocket (sem alterações)
+  const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+  const ws_path = ws_scheme + '://' + window.location.host + '/notifications/';
+  const socket = new WebSocket(ws_path);
 
-{% endblock content %}
+  socket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    if (data.type === 'notification_message' || data.type === 'notification') {
+      showNotification(data.message);
+    }
+  };
+
+  socket.onclose = function(e) {
+    console.error('WebSocket fechado inesperadamente');
+  };
+
+  let alertCount = 0;
+  const bell = document.getElementById('alert-bell');
+  const notificationsPanel = document.getElementById('notifications');
+  const badge = document.getElementById('alert-badge');
+
+  bell.onclick = function() {
+    if (notificationsPanel.style.display === 'none') {
+      notificationsPanel.style.display = 'block';
+      badge.style.display = 'none';
+      alertCount = 0;
+    } else {
+      notificationsPanel.style.display = 'none';
+    }
+  };
+
+  function showNotification(message) {
+    const notificationDiv = document.createElement('div');
+    notificationDiv.classList.add('notification-item');
+    notificationDiv.classList.add(message.geofence_type === 'Primario' ? 'primary' : 'secondary');
+
+    // Botão de fechar
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '&times;';
+    closeBtn.style.cssText = `
+      background: transparent;
+      border: none;
+      color: #888;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 10px;
+      margin-right: 0;
+      margin-top: -8px;
+      align-self: flex-start;
+    `;
+    closeBtn.onclick = function() {
+      notificationDiv.style.animation = 'slideOut 0.5s ease-out forwards';
+      setTimeout(() => notificationDiv.remove(), 500);
+      updateBadge();
+    };
+
+    notificationDiv.innerHTML = `
+        <img src="${message.image || '{% static "images/default-icon.png" %}'}" alt="Ícone">
+        <div class="notification-content">
+          <strong>${message.title || 'Notificação'}</strong>
+          <p>${message.text || 'Detalhes não disponíveis.'}</p>
+          <p>Status: ${message.status || 'N/A'}</p>
+          <small>${new Date(message.timestamp).toLocaleString()}</small>
+        </div>
+    `;
+    notificationDiv.appendChild(closeBtn);
+
+    notificationsPanel.appendChild(notificationDiv);
+    alertCount++;
+    updateBadge();
+  }
+
+  function updateBadge() {
+    const count = notificationsPanel.querySelectorAll('.notification-item').length;
+    if (count > 0 && notificationsPanel.style.display === 'none') {
+      badge.textContent = count;
+      badge.style.display = 'block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // Mapa e Marcadores (sem alterações significativas na lógica, apenas nos ícones se necessário)
+  var map = L.map('map').setView([-18.6619, -48.1612], 7);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Ícones (mantidos como no original)
+  var t42Icon = L.icon({
+    iconUrl: '{% static "images/lock.png" %}',
+    iconSize: [48, 72],
+    iconAnchor: [24, 72],
+    popupAnchor: [0, -35],
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    shadowSize: [40, 40]
+  });
+  var stcIscaIcon = L.icon({
+    iconUrl: '{% static "images/circuit-board.png" %}',
+    iconSize: [48, 72],
+    iconAnchor: [24, 72],
+    popupAnchor: [0, -35],
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    shadowSize: [40, 40]
+  });
+  var stcVeiculoIcon = L.icon({
+    iconUrl: '{% static "images/caminhao.png" %}',
+    iconSize: [90, 50],
+    iconAnchor: [24, 72],
+    popupAnchor: [0, -35],
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    shadowSize: [40, 40]
+  });
+
+  var markersLayer = L.layerGroup().addTo(map);
+  var fencesLayer = L.layerGroup().addTo(map);
+
+  function carregarDispositivos() {
+    fetch('/service/get_devices_data/')
+      .then(response => response.json())
+      .then(data => {
+        markersLayer.clearLayers();
+        fencesLayer.clearLayers();
+
+        // Cercas
+        if (data.geofences) {
+          data.geofences.forEach(fence => {
+            if (!fence.center || !fence.radius) return;
+            var circle = L.circle(fence.center, {
+              color: 'green',
+              fillColor: '#008000',
+              fillOpacity: 0.2,
+              radius: fence.radius
+            }).addTo(fencesLayer);
+            circle.bindPopup(`<strong>${fence.name}</strong><br>Raio: ${fence.radius/1000} km`);
+          });
+        }
+
+        // T42 (Cadeado)
+        if (data.t42_devices) {
+          data.t42_devices.forEach(device => {
+            if (!device.latitude || !device.longitude) return;
+            var lat = parseFloat(device.latitude);
+            var lng = parseFloat(device.longitude);
+            if (isNaN(lat) || isNaN(lng)) return;
+            var id = device.unitnumber || 'N/A';
+            var marker = L.marker([lat, lng], {icon: t42Icon}).addTo(markersLayer);
+            var popupContent = `<b>Cadeado (T42)</b><br>ID: ${id}<br>Bateria: ${device.main_voltage || 'N/A'}<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}}`;
+            marker.bindPopup(popupContent);
+          });
+        }
+
+        // STC Equipamentos (Isca) e Veículos STC
+        if (data.stc_devices) {
+          data.stc_devices.forEach(device => {
+            if (!device.latitude || !device.longitude) return;
+            var lat = parseFloat(device.latitude);
+            var lng = parseFloat(device.longitude);
+            if (isNaN(lat) || isNaN(lng)) return;
+
+            if (device.detalhes && device.detalhes.placa) {
+              // Veículo STC
+              var marker = L.marker([lat, lng], {icon: stcVeiculoIcon}).addTo(markersLayer);
+              var detalhes = device.detalhes;
+              var popupContent = `
+                <b>Veículo STC</b><br>
+                Placa: ${detalhes.placa || device.nome || 'N/A'}<br>
+                Modelo: ${detalhes.modelo || 'N/A'}<br>
+                Endereço: ${device.endereco || 'N/A'}<br>
+                Status: ${detalhes.status || 'N/A'}<br>
+                Velocidade: ${detalhes.velocidade || '0'} km/h<br>
+                Bateria: ${detalhes.bateria || 'N/A'}<br>
+                Ignição: ${detalhes.ignicao || 'N/A'}<br>
+                GPS Fix: ${detalhes.gpsFix || 'N/A'}<br>
+                Origem Posição: ${detalhes.originPosition || 'N/A'}<br>
+                Última Atualização: ${detalhes.data || 'N/A'}<br>
+                <b>Empresa:</b> ${device.empresa || detalhes.empresa || 'N/A'}<br>
+              `;
+              marker.bindPopup(popupContent);
+            } else {
+              // Equipamento STC (isca)
+              var marker = L.marker([lat, lng], {icon: stcIscaIcon}).addTo(markersLayer);
+              var id = device.deviceId || 'N/A';
+              var popupContent = `<b>Isca (STC)</b><br>ID: ${id}<br>Bateria: ${device.batteryPercentual || 'N/A'}<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}}`;
+              marker.bindPopup(popupContent);
+            }
+          });
+        }
+
+        // Veículos Trafegus
+        if (data.trafegus_devices) {
+          data.trafegus_devices.forEach(device => {
+            if (!device.latitude || !device.longitude) return;
+            var lat = parseFloat(device.latitude);
+            var lng = parseFloat(device.longitude);
+            if (isNaN(lat) || isNaN(lng)) return;
+
+            var marker = L.marker([lat, lng], {icon: stcVeiculoIcon}).addTo(markersLayer);
+            var detalhes = device.detalhes || {};
+            var popupContent = `
+              <b>Veículo Trafegus</b><br>
+              Placa: ${detalhes.placa || 'N/A'}<br>
+              ${(detalhes.placaCarreta ? `Placa Carreta: ${detalhes.placaCarreta}<br>` : '')}
+              Motorista: ${detalhes.motorista || 'N/A'}<br>
+              Status: ${detalhes.statusCarga || 'N/A'}<br>
+              Local: ${detalhes.descricaoLocal || 'N/A'}<br>
+              Última Atualização: ${detalhes.dataPosicao || 'N/A'}<br>
+              <b>Empresa:</b> ${detalhes.empresa || 'N/A'}<br>
+            `;
+            if (detalhes.contatoMotorista && detalhes.contatoMotorista.length > 0) {
+              popupContent += '<br><b>Contatos:</b><br>' + detalhes.contatoMotorista.map(contato => `${contato.texto}: ${contato.telefone}`).join('<br>');
+            }
+            if (detalhes.notasFiscais && detalhes.notasFiscais.length > 0) {
+              popupContent += '<br><b>Notas Fiscais:</b><br>' + detalhes.notasFiscais.map(nota => nota.numero).join('<br>');
+            }
+            marker.bindPopup(popupContent);
+          });
+        }
+
+        // Carregar veículos da API Trafegus
+        //carregarVeiculosTrafegus(); // Removido para evitar duplicidade
+      })
+      .catch(err => {
+        console.error('Erro ao buscar dispositivos:', err);
+        // alert('Erro ao buscar dispositivos: ' + err);
+      });
+  }
+
+  // Carrega inicialmente e depois a cada 60 segundos
+  carregarDispositivos();
+  setInterval(carregarDispositivos, 60000);
+});
+</script>
+{% endblock %}
