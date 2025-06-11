@@ -244,259 +244,107 @@ def get_devices_data(request):
     else:
         get_devices_data._ultima_resposta_t42_cache = ultima_resposta_t42
 
-    # 🔴 API STC (sempre faz a requisição)
-    payload_stc = {
-        "key": STC_KEY,
-        "user": STC_USER,
-        "pass": STC_PASS
-    }
-    headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    }
-    # Variável para cache dos últimos dados válidos da STC
-    if not hasattr(get_devices_data, '_ultima_resposta_stc_cache'):
-        get_devices_data._ultima_resposta_stc_cache = []
-
-    try:
-        stc_response = requests.post(
-            STC_API_URL, 
-            json=payload_stc, 
-            headers=headers,
-            verify=False,
-            timeout=10  # Reduz o timeout para resposta mais rápida
-        )
-        content_type = stc_response.headers.get('content-type', '').lower()
-        stc_debug_info['status_code'] = stc_response.status_code
-        stc_debug_info['content_type'] = content_type
-        stc_debug_info['text'] = stc_response.text[:1000]
-        if stc_response.status_code == 200 and 'application/json' in content_type:
-            try:
-                stc_raw_data = stc_response.json()
-                stc_debug_info['json'] = stc_raw_data
-                processed_stc_data = []
-                # Aceita diferentes formatos e processa todos os devices
-                devices_list = []
-                if isinstance(stc_raw_data, dict):
-                    if 'data' in stc_raw_data and isinstance(stc_raw_data['data'], list):
-                        devices_list = stc_raw_data['data']
-                    else:
-                        if get_devices_data._ultima_resposta_stc_cache:
-                            ultima_resposta_stc = get_devices_data._ultima_resposta_stc_cache
-                            stc_updated = False
-                        else:
-                            ultima_resposta_stc = []
-                        devices_list = []
-                elif isinstance(stc_raw_data, list):
-                    devices_list = stc_raw_data
-                # Processa todos os devices (veículos e iscas)
-                isca_ids = []
-                for posto in paradasegura.POSTOS_INFO1.values():
-                    isca_ids.extend([isca[0] for isca in posto.get('iscas', [])])
-                isca_ids = set(isca_ids)
-                for device in devices_list:
-                    if not isinstance(device, dict):
-                        continue
-                    lat = device.get('latitude') or device.get('lat')
-                    lng = device.get('longitude') or device.get('lng')
-                    if not lat or not lng:
-                        continue
-                    isca = str(device.get('deviceId')) in isca_ids or str(device.get('plate', '')).startswith('RT')
-                    # Sempre inclua 'detalhes' para caminhão
-                    if not isca and device.get('plate'):
-                        processed_device = {
-                            'type': 'STC',
-                            'latitude': lat,
-                            'longitude': lng,
-                            'plate': device.get('plate', 'N/A'),
-                            'speed': device.get('speed', 0),
-                            'direction': device.get('direction', 0),
-                            'ignition': device.get('ignition', False),
-                            'last_update': device.get('last_update', ''),
-                            'deviceId': device.get('deviceId', device.get('unitnumber', device.get('term_numero_terminal', ''))),
-                            'status': device.get('status', ''),
-                            'batteryPercentual': device.get('batteryPercentual', device.get('bateria', 'N/A')),
-                            'main_voltage': device.get('main_voltage', ''),
-                            'date': device.get('date', device.get('data_cadastro', '')),
-                            'isca': device.get('isca', ''),
-                            'detalhes': {
-                                'placa': device.get('plate', 'N/A'),
-                                'modelo': device.get('modelo', 'N/A'),
-                                'status': device.get('status', 'N/A'),
-                                'batteryPercentual': device.get('batteryPercentual', 'N/A'),
-                                'main_voltage': device.get('main_voltage', 'N/A'),
-                                'date': device.get('date', 'N/A'),
-                                'isca': device.get('isca', 'N/A'),
-                            },
-                            'documento': device.get('documento', 'N/A'),
-                            'empresa': device.get('empresa', 'N/A')
-                        }
-                    else:  # Isca
-                        processed_device = {
-                            'type': 'STC_ISCA',
-                            'latitude': lat,
-                            'longitude': lng,
-                            'plate': device.get('plate', 'N/A'),
-                            'speed': device.get('speed', 0),
-                            'direction': device.get('direction', 0),
-                            'ignition': device.get('ignition', False),
-                            'last_update': device.get('last_update', ''),
-                            'deviceId': device.get('deviceId', device.get('unitnumber', device.get('term_numero_terminal', ''))),
-                            'status': device.get('status', ''),
-                            'batteryPercentual': device.get('batteryPercentual', device.get('bateria', 'N/A')),
-                            'main_voltage': device.get('main_voltage', ''),
-                            'date': device.get('date', device.get('data_cadastro', '')),
-                            'isca': device.get('isca', ''),
-                            'documento': device.get('documento', 'N/A'),
-                            'empresa': device.get('empresa', 'N/A')
-                        }
-                    processed_stc_data.append(processed_device)
-                if processed_stc_data:
-                    ultima_resposta_stc = processed_stc_data
-                    get_devices_data._ultima_resposta_stc_cache = processed_stc_data
-                    stc_updated = True
-                    print(f"✅ API STC atualizada com {len(processed_stc_data)} dispositivos (veículos e iscas).")
-                else:
-                    if get_devices_data._ultima_resposta_stc_cache:
-                        ultima_resposta_stc = get_devices_data._ultima_resposta_stc_cache
-                        stc_updated = False
-                    else:
-                        ultima_resposta_stc = []
-            except json.JSONDecodeError as e:
-                stc_debug_info['json_error'] = str(e)
-                print(f"⚠️ API STC retornou resposta inválida: {str(e)}.")
-                if get_devices_data._ultima_resposta_stc_cache:
-                    ultima_resposta_stc = get_devices_data._ultima_resposta_stc_cache
-                    stc_updated = False
-                else:
-                    return JsonResponse({"error": "A API STC não retornou JSON válido", "stc_debug": stc_response.text[:1000]}, status=502)
-        else:
-            print(f"⚠️ API STC falhou com status {stc_response.status_code} ou tipo de conteúdo inválido ({content_type}).")
-            if get_devices_data._ultima_resposta_stc_cache:
-                ultima_resposta_stc = get_devices_data._ultima_resposta_stc_cache
-                stc_updated = False
-            else:
-                return JsonResponse({"error": "A API STC não retornou JSON válido", "stc_debug": stc_response.text[:1000]}, status=502)
-    except requests.RequestException as e:
-        stc_debug_info['request_exception'] = str(e)
-        print(f"⚠️ Erro ao chamar a API STC: {str(e)}.")
-        if get_devices_data._ultima_resposta_stc_cache:
-            ultima_resposta_stc = get_devices_data._ultima_resposta_stc_cache
-            stc_updated = False
-        else:
-            return JsonResponse({"error": "Erro ao chamar a API STC", "stc_debug": str(e)}, status=502)
-
-    # 🚛 API Trafegus
-    trafegus_data = []
-    documentos = ["61064929000179", "24315867000102"]
-    auth = ("WS_GOLDENSAT", "OVERHAUL.2025")
-    for documento in documentos:
-        url = f"https://trafegus.over-haul.com/ws_rest/public/api/ultima-posicao-viagem?Documento={documento}"
-        try:
-            response = requests.get(url, auth=auth, timeout=30)
-            response.raise_for_status()
-            data = response.json()
-            for viagem in data.get("viagem", []):
-                posicao = viagem.get("posicoesViagem", {})
-                if not posicao:
-                    continue
-                coordenada = posicao.get("coordenada", "")
-                lat, lng = None, None
-                if coordenada:
-                    try:
-                        lat, lng = map(float, coordenada.split(","))
-                    except (ValueError, AttributeError):
-                        continue
-                if lat is None or lng is None:
-                    continue
-                status_carga = posicao.get("statusCarga", "").upper()
-                if any(status in status_carga for status in ['FINISH', 'FINALIZADO', 'CONCLUIDO', 'ENTREGUE']):
-                    continue
-                # Associação da empresa pelo documento
-                if documento == "61064929000179":
-                    empresa = "Corteva"
-                elif documento == "24315867000102":
-                    empresa = "Comandolog"
-                else:
-                    empresa = "Desconhecida"
-                trafegus_data.append({
-                    "latitude": lat,
-                    "longitude": lng,
-                    "detalhes": {
-                        "placa": posicao.get("placa"),
-                        "placaCarreta": posicao.get("placaCarreta"),
-                        "motorista": posicao.get("motorista"),
-                        "statusCarga": posicao.get("statusCarga"),
-                        "descricaoLocal": posicao.get("descricaoLocal"),
-                        "dataPosicao": posicao.get("dataPosicao"),
-                        "contatoMotorista": posicao.get("contatoMotorista", []),
-                        "notasFiscais": posicao.get("notasFiscais", []),
-                        "documento": documento,
-                        "empresa": empresa
-                    }
-                })
-        except requests.RequestException as e:
-            print(f"Erro ao buscar dados para documento {documento}: {str(e)}")
-            continue
-
-    # 🚧 Cercas geográficas (mantendo todas as que você criou)
-    user = request.user
-    geofences = [
-        {
-            "name": g.geofence.nome,
-            "center": [g.geofence.latitude, g.geofence.longitude],
-            "radius": g.geofence.raio
+    # 🔴 API STC (apenas se passou 60 segundos desde a última chamada)
+    tempo_atual = time.time()
+    if tempo_atual - ultima_chamada_stc >= 60:
+        payload_stc = {
+            "key": STC_KEY,
+            "user": STC_USER,
+            "pass": STC_PASS
         }
-        for g in UserGeofence.objects.filter(user=user)
-    ]
+        try:
+            stc_response = requests.post(STC_API_URL, json=payload_stc, verify=False)
+            if stc_response.status_code == 200:
+                try:
+                    stc_raw_data = stc_response.json()
+                except Exception as e:
+                    print(f"Erro ao decodificar JSON da API STC: {e}")
+                    stc_raw_data = {}
+                if "data" in stc_raw_data and stc_raw_data["data"]:
+                    ultima_resposta_stc = stc_raw_data["data"]
+                    global ultima_chamada_stc # Garante que estamos usando a global
+                    ultima_chamada_stc = tempo_atual
+                    stc_updated = True
+                    print("✅ API STC atualizada com novos dados.")
+                else:
+                    print("⚠️ API STC retornou um JSON vazio. Mantendo últimos dados válidos.")
+            else:
+                print(f"⚠️ API STC falhou com status {stc_response.status_code}. Mantendo os últimos dados.")
+        except requests.RequestException as e:
+            print(f"⚠️ Erro ao chamar a API STC: {e}. Mantendo os últimos dados.")
+    else:
+        print("⏳ API STC chamada recentemente. Retornando últimos dados armazenados.")
+    
+    # Se não atualizou STC, usa o último cache
+    if not stc_updated and ultima_resposta_stc is None:
+        print("⚠️ Nenhum dado STC válido encontrado. Usando último cache STC ou lista vazia.")
+        ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
+    elif stc_updated:
+        get_devices_data._ultima_resposta_stc_cache = ultima_resposta_stc
+    
+    if ultima_resposta_stc is None:
+        ultima_resposta_stc = [] # Garante que seja uma lista se ainda for None
+    
 
-    # Filtra apenas dispositivos realmente dentro de alguma cerca para alertas
-    devices_in_geofences = []
-    notified_vehicles = set()
-    for device in ultima_resposta_t42 + ultima_resposta_stc + trafegus_data:
-        if 'latitude' in device and 'longitude' in device:
-            lat = float(device['latitude']) if device['latitude'] not in [None, '', 0, '0'] else None
-            lon = float(device['longitude']) if device['longitude'] not in [None, '', 0, '0'] else None
-            if lat is None or lon is None:
-                continue
-            for geofence in geofences:
-                if check_geofence(lat, lon, geofence):
-                    device['current_geofence'] = geofence['name']
-                    # Só notifica uma vez por device por request
-                    if device.get('device_id') or device.get('placa') or (device.get('detalhes') and device['detalhes'].get('placa')):
-                        unique_id = device.get('device_id') or device.get('placa') or (device.get('detalhes', {}).get('placa'))
-                        if (unique_id, geofence['name']) not in notified_vehicles:
-                            notify_geofence_event(device, geofence['name'])
-                            notified_vehicles.add((unique_id, geofence['name']))
-                    devices_in_geofences.append(device)
-                    break  # Só adiciona uma vez por cerca
+    # Buscar dados da Trafegus (mantido como estava)
+    trafegus_vehicles = fetch_trafegus_vehicles()
+    
+    # Se houver dispositivos, adiciona o tipo
+    for device in ultima_resposta_t42:
+        device["type"] = "T42"
+    for device in ultima_resposta_stc:
+        device["type"] = "STC"
+    for device in trafegus_vehicles: # Add Trafegus devices
+        device["type"] = "Trafegus"
 
-    response = JsonResponse({
-        "t42_devices": ultima_resposta_t42,
-        "stc_devices": ultima_resposta_stc,
-        "trafegus_devices": trafegus_data,
-        "geofences": geofences,
-        "devices_in_geofences": devices_in_geofences,
-        "last_update": {
-            "t42": {
-                "updated": t42_updated,
-                "devices_count": len(ultima_resposta_t42)
-            },
-            "stc": {
-                "updated": stc_updated,
-                "devices_count": len(ultima_resposta_stc)
-            },
-            "trafegus": {
-                "updated": True,
-                "devices_count": len(trafegus_data)
-            }
-        },
-        "stc_debug": stc_debug_info
+    # DEBUG: Mostra os valores atuais no console
+    print("\n==== DEBUG get_devices_data ====")
+    print(f"STC devices: {len(ultima_resposta_stc)}")
+    for d in ultima_resposta_stc:
+        print(d)
+    print(f"T42 devices: {len(ultima_resposta_t42)}")
+    for d in ultima_resposta_t42:
+        print(d)
+    print(f"Trafegus devices: {len(trafegus_vehicles)}") # Add Trafegus debug
+    for d in trafegus_vehicles:
+        print(d)
+    print(f"Geofences: {len(geofences)}")
+    for g in geofences:
+        print(g)
+    print("==============================\n")
+
+    # Combina todos os veículos
+    all_devices = ultima_resposta_t42 + ultima_resposta_stc + trafegus_vehicles
+
+    # Itera sobre todos os dispositivos para verificar geofences e notificar
+    for device in all_devices:
+        # Adaptação para o formato esperado por check_vehicle_geofence
+        # Certifique-se de que 'device' contém as chaves 'latitude', 'longitude' e 'placa'
+        # de forma consistente para T42, STC e Trafegus.
+        processed_device = {
+            'type': device.get('type'),
+            'latitude': device.get('latitude') or device.get('lat'),
+            'longitude': device.get('longitude') or device.get('lon'),
+            'placa': device.get('plate') or device.get('placa') or (device.get('detalhes', {}).get('placa') if device.get('detalhes') else None) or device.get('unitnumber'),
+            'statusCarga': device.get('statusCarga') or device.get('status'),
+            'detalhes': device.get('detalhes', {}) # Garante que detalhes exista, mesmo que vazio
+        }
+        # Adicione outros campos relevantes do Trafegus que possam ser usados no popup/notificação
+        if device.get('type') == 'Trafegus':
+            processed_device['motorista'] = device.get('motorista')
+            processed_device['descricaoLocal'] = device.get('endereco') # Trafegus usa 'endereco'
+            processed_device['dataPosicao'] = device.get('datetime_utc') # Trafegus usa 'datetime_utc'
+
+        check_vehicle_geofence(processed_device, geofences)
+
+    # Sempre retorna JSON válido
+    return JsonResponse({
+        "t42_devices": ultima_resposta_t42, # Keep for existing logic, if any
+        "stc_devices": ultima_resposta_stc, # Keep for existing logic, if any
+        "trafegus_vehicles": trafegus_vehicles, # Add Trafegus vehicles
+        "all_devices": all_devices, # New combined list
+        "geofences": geofences
     })
-    response["Access-Control-Allow-Origin"] = "*"
-    response["Access-Control-Allow-Methods"] = "GET, OPTIONS"
-    response["Access-Control-Allow-Headers"] = "Content-Type"
-    return response
 
 
 #==============
