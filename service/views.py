@@ -314,15 +314,18 @@ def get_devices_data(request):
                             if isinstance(device, dict):
                                 processed_device = {
                                     'type': 'T42',
-                                    'latitude': device.get('latitude', 0),
-                                    'longitude': device.get('longitude', 0),
+                                    'latitude': float(device.get('latitude', 0)),
+                                    'longitude': float(device.get('longitude', 0)),
                                     'plate': device.get('plate', 'N/A'),
-                                    'speed': device.get('speed', 0),
-                                    'direction': device.get('direction', 0),
-                                    'ignition': device.get('ignition', False),
+                                    'speed': float(device.get('speed', 0)),
+                                    'direction': float(device.get('direction', 0)),
+                                    'ignition': device.get('ignition', 'OFF') == 'ON',
                                     'last_update': device.get('last_update', ''),
                                     'unitnumber': device.get('unitnumber', ''),
-                                    'status': device.get('status', '')
+                                    'status': device.get('status', ''),
+                                    'address': device.get('address', ''),
+                                    'battery': device.get('battery', ''),
+                                    'temperature': device.get('temp1', '')
                                 }
                                 processed_t42_data.append(processed_device)
                         
@@ -351,9 +354,29 @@ def get_devices_data(request):
                 try:
                     stc_data = stc_response.json()
                     if stc_data.get("success") is True and stc_data.get("data"):
+                        processed_stc_data = []
+                        for device in stc_data["data"]:
+                            if isinstance(device, dict):
+                                processed_device = {
+                                    'type': 'STC',
+                                    'latitude': float(device.get('latitude', 0)),
+                                    'longitude': float(device.get('longitude', 0)),
+                                    'plate': device.get('plate', 'N/A'),
+                                    'speed': float(device.get('speed', 0)),
+                                    'direction': float(device.get('direction', 0)),
+                                    'ignition': device.get('ignition', 'OFF') == 'ON',
+                                    'last_update': device.get('date', ''),
+                                    'address': device.get('address', ''),
+                                    'battery': device.get('batteryPercentual', ''),
+                                    'temperature': device.get('temp1', ''),
+                                    'gps_fix': device.get('gpsFix', '0') == '1',
+                                    'origin_position': device.get('originPosition', '')
+                                }
+                                processed_stc_data.append(processed_device)
+                        
                         # Atualiza o cache persistente com os novos dados
-                        cache_persistente.atualizar_stc(stc_data["data"])
-                        ultima_resposta_stc = stc_data["data"]
+                        cache_persistente.atualizar_stc(processed_stc_data)
+                        ultima_resposta_stc = processed_stc_data
                         stc_updated = True
                         print("✅ API STC atualizada com novos dados.")
                     else:
@@ -366,16 +389,6 @@ def get_devices_data(request):
     # Busca dados da Trafegus
     trafegus_vehicles = fetch_trafegus_vehicles()
     
-    # Adiciona o tipo para cada dispositivo
-    for device in ultima_resposta_t42:
-        device["type"] = "T42"
-    for device in ultima_resposta_stc:
-        device["type"] = "STC"
-        device["placa"] = device.get('placa') or device.get('plate') or device.get('name') or device.get('deviceId')
-        device["statusCarga"] = device.get('statusCarga') or device.get('status') or device.get('ignicao')
-    for device in trafegus_vehicles:
-        device["type"] = "Trafegus"
-
     # Log de debug
     print("\n==== DEBUG get_devices_data ====")
     print(f"STC devices: {len(ultima_resposta_stc)}")
@@ -396,9 +409,9 @@ def get_devices_data(request):
     for device in all_devices:
         processed_device = {
             'type': device.get('type'),
-            'latitude': device.get('latitude') or device.get('lat'),
-            'longitude': device.get('longitude') or device.get('lon'),
-            'placa': device.get('plate') or device.get('placa') or (device.get('detalhes', {}).get('placa') if device.get('detalhes') else None) or device.get('unitnumber'),
+            'latitude': device.get('latitude'),
+            'longitude': device.get('longitude'),
+            'placa': device.get('plate') or device.get('placa'),
             'statusCarga': device.get('statusCarga') or device.get('status'),
             'detalhes': device.get('detalhes', {})
         }
