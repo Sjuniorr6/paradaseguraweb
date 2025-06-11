@@ -231,12 +231,27 @@ document.addEventListener('DOMContentLoaded', function() {
   const notificationsPanel = document.getElementById('notifications');
   const badge = document.getElementById('alert-badge');
 
-  bell.onclick = function() {
+  bell.onclick = function(event) {
+    event.stopPropagation(); // Evita que o clique se propague para o document
     if (notificationsPanel.style.display === 'none') {
       notificationsPanel.style.display = 'block';
-      badge.style.display = 'none';
-      alertCount = 0;
+      badge.style.display = 'none'; // Esconde o badge ao abrir o painel
+      alertCount = 0; // Reseta a contagem de alertas não lidos
     } else {
+      notificationsPanel.style.display = 'none';
+      // Ao fechar, se houver novos alertas, o badge deve reaparecer
+      if (alertCount > 0) {
+        badge.style.display = 'block';
+      }
+    }
+  };
+
+  // Fecha o painel de notificações se clicar fora dele ou do sino
+  document.onclick = function(event) {
+    if (notificationsPanel.style.display === 'block' &&
+        !notificationsPanel.contains(event.target) &&
+        event.target !== bell &&
+        !bell.contains(event.target)) {
       notificationsPanel.style.display = 'none';
       if (alertCount > 0) {
         badge.style.display = 'block';
