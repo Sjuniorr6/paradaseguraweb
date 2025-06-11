@@ -218,26 +218,37 @@ def notify_geofence_event(vehicle_data, geofence_name):
         else:
             image_url += 'lock.png'  # Imagem para cerca secundária
 
-        # A placa e o status já vêm padronizados da função get_devices_data
-        placa = vehicle_data.get('placa', 'N/A')
-        status = vehicle_data.get('statusCarga', 'N/A')
-
-        # Garante que placa e status não sejam vazios para o alerta
-        placa_alerta = placa if placa and placa != 'N/A' else 'N/A'
-        status_alerta = status if status and status != 'N/A' else 'N/A'
+        # Busca a placa corretamente (trafegus pode ser 'plate', 'placa' ou dentro de 'detalhes')
+        placa = (
+            vehicle_data.get('placa') or
+            vehicle_data.get('plate') or
+            (vehicle_data.get('detalhes', {}).get('placa') if vehicle_data.get('detalhes') else None) or
+            'N/A'
+        )
+        # Busca status corretamente
+        status = (
+            vehicle_data.get('statusCarga') or
+            vehicle_data.get('status') or
+            (vehicle_data.get('detalhes', {}).get('statusCarga') if vehicle_data.get('detalhes') else None) or
+            (vehicle_data.get('detalhes', {}).get('status') if vehicle_data.get('detalhes') else None) or
+            'N/A'
+        )
 
         # Envia para todos os usuários conectados
         async_to_sync(channel_layer.group_send)(
             "notifications",
             {
                 "type": "notification_message",
-                "title": "Veículo dentro da cerca",
-                "text": f"Veículo {placa_alerta} está dentro da cerca {geofence_name}",
-                "vehicle": vehicle_data,
-                "image": image_url,
-                "geofence_type": "Primario" if "Primario" in geofence_name else "Secundario",
-                "status": status_alerta,
-                "timestamp": datetime.now().isoformat()
+                "message": {
+                    "type": "geofence",
+                    "title": "Veículo dentro da cerca",
+                    "text": f"Veículo {placa} está dentro da cerca {geofence_name}",
+                    "vehicle": vehicle_data,
+                    "image": image_url,
+                    "geofence_type": "Primario" if "Primario" in geofence_name else "Secundario",
+                    "status": status,
+                    "timestamp": datetime.now().isoformat()
+                }
             }
         )
     except Exception as e:
@@ -250,26 +261,20 @@ def notify_geofence_exit_event(vehicle_data, geofence_name):
     try:
         channel_layer = get_channel_layer()
         image_url = '/static/images/lock.png'  # Pode customizar se quiser
-        
-        # A placa e o status já vêm padronizados da função get_devices_data
-        placa = vehicle_data.get('placa', 'N/A')
-        status = vehicle_data.get('statusCarga', 'N/A')
-
-        # Garante que placa e status não sejam vazios para o alerta
-        placa_alerta = placa if placa and placa != 'N/A' else 'N/A'
-        status_alerta = status if status and status != 'N/A' else 'N/A'
-
         async_to_sync(channel_layer.group_send)(
             "notifications",
             {
                 "type": "notification_message",
-                "title": "Veículo saiu da cerca",
-                "text": f"Veículo {placa_alerta} saiu da cerca {geofence_name}",
-                "vehicle": vehicle_data,
-                "image": image_url,
-                "geofence_type": "Saida",
-                "status": status_alerta,
-                "timestamp": datetime.now().isoformat()
+                "message": {
+                    "type": "geofence_exit",
+                    "title": "Veículo saiu da cerca",
+                    "text": f"Veículo {vehicle_data.get('placa', 'N/A')} saiu da cerca {geofence_name}",
+                    "vehicle": vehicle_data,
+                    "image": image_url,
+                    "geofence_type": "Saida",
+                    "status": vehicle_data.get('statusCarga', 'N/A'),
+                    "timestamp": datetime.now().isoformat()
+                }
             }
         )
     except Exception as e:
@@ -292,12 +297,7 @@ def get_devices_data(request):
         }
         
         print("Buscando dados T42...")
-        t42_response = requests.get(
-            T42_API_URL, 
-            params=params_t42, 
-            verify=False, 
-            timeout=30
-        )
+        t42_response = requests.get(T42_API_URL, params=params_t42, verify=False, timeout=30)
         
         if t42_response.status_code == 200:
             t42_data = t42_response.json()
@@ -346,70 +346,39 @@ def get_devices_data(request):
     print("==============================\n")
 
     # Combina todos os veículos
-    all_devices_raw = ultima_resposta_t42 + ultima_resposta_stc + trafegus_vehicles
-    
-    standardized_devices = []
+    all_devices = ultima_resposta_t42 + ultima_resposta_stc + trafegus_vehicles
+    print(f"Total de dispositivos: {len(all_devices)}")
 
-    # Padroniza os campos para cada dispositivo e verifica geofences
-    for device_raw in all_devices_raw:
+    # Verifica geofences para cada dispositivo
+    for device in all_devices:
         processed_device = {
-            'type': device_raw.get('type'),
-            'latitude': None, # Inicializa como None, será preenchido abaixo
-            'longitude': None, # Inicializa como None, será preenchido abaixo
-            'placa': 'N/A',
-            'statusCarga': 'N/A',
-            'motorista': 'N/A',
-            'descricaoLocal': 'N/A',
-            'dataPosicao': 'N/A',
-            'original_data': device_raw # Mantém os dados originais para referência
+            'type': device.get('type'),
+            'latitude': device.get('latitude'),
+            'longitude': device.get('longitude'),
+            'placa': device.get('plate') or device.get('placa'),
+            'statusCarga': device.get('statusCarga') or device.get('status'),
+            'detalhes': device.get('detalhes', {})
         }
         
-        if processed_device['type'] == 'Trafegus':
-            processed_device['placa'] = device_raw.get('placa') or device_raw.get('plate')
-            processed_device['statusCarga'] = device_raw.get('statusCarga') or device_raw.get('status')
-            processed_device['latitude'] = float(device_raw.get('latitude')) if device_raw.get('latitude') else None
-            processed_device['longitude'] = float(device_raw.get('longitude')) if device_raw.get('longitude') else None
-            processed_device['motorista'] = device_raw.get('motorista')
-            processed_device['descricaoLocal'] = device_raw.get('descricaoLocal')
-            processed_device['dataPosicao'] = device_raw.get('dataPosicao')
+        if device.get('type') == 'Trafegus':
+            processed_device['motorista'] = device.get('motorista')
+            processed_device['descricaoLocal'] = device.get('endereco')
+            processed_device['dataPosicao'] = device.get('datetime_utc')
 
-        elif processed_device['type'] == 'T42':
-            processed_device['placa'] = device_raw.get('device_id')
-            processed_device['statusCarga'] = device_raw.get('ignition_status')
-            processed_device['latitude'] = float(device_raw.get('lat')) if device_raw.get('lat') else None
-            processed_device['longitude'] = float(device_raw.get('lng')) if device_raw.get('lng') else None
-            processed_device['dataPosicao'] = device_raw.get('timestamp')
-            processed_device['descricaoLocal'] = device_raw.get('address')
-            processed_device['speed'] = device_raw.get('speed')
-            processed_device['battery_voltage'] = device_raw.get('battery_voltage')
+        check_vehicle_geofence(processed_device, geofences)
 
-        elif processed_device['type'] == 'STC':
-            processed_device['placa'] = device_raw.get('Plate')
-            processed_device['statusCarga'] = device_raw.get('LastStatusName')
-            processed_device['latitude'] = float(device_raw.get('Latitude')) if device_raw.get('Latitude') else None
-            processed_device['longitude'] = float(device_raw.get('Longitude')) if device_raw.get('Longitude') else None
-            processed_device['dataPosicao'] = device_raw.get('LastDataHora')
-            processed_device['descricaoLocal'] = device_raw.get('Endereco')
-            processed_device['temperature'] = device_raw.get('Temperatura')
-            processed_device['ignition'] = device_raw.get('Ignition')
+    print("==== FIM get_devices_data ====\n")
 
-        # Apenas adiciona à lista final se tiver placa, latitude e longitude válidos
-        if processed_device['placa'] != 'N/A' and processed_device['latitude'] is not None and processed_device['longitude'] is not None:
-            standardized_devices.append(processed_device)
-            check_vehicle_geofence(processed_device, geofences)
-        else:
-            print(f"⚠️ Dispositivo ignorado por falta de dados essenciais (placa ou coordenadas): {device_raw.get('type')} - {device_raw}")
-
-    # A resposta JSON deve usar a lista de dispositivos padronizados
-    print(f"Total de dispositivos padronizados para envio: {len(standardized_devices)}")
-
-    return JsonResponse({
-        "t42_devices": [d for d in standardized_devices if d.get('type') == 'T42'],
-        "stc_devices": [d for d in standardized_devices if d.get('type') == 'STC'],
-        "trafegus_vehicles": [d for d in standardized_devices if d.get('type') == 'Trafegus'],
-        "all_devices": standardized_devices,
+    response_data = {
+        "t42_devices": ultima_resposta_t42,
+        "stc_devices": ultima_resposta_stc,
+        "trafegus_vehicles": trafegus_vehicles,
+        "all_devices": all_devices,
         "geofences": geofences
-    })
+    }
+
+    print(f"Enviando resposta com {len(all_devices)} dispositivos")
+    return JsonResponse(response_data)
 
 
 #==============
@@ -617,12 +586,7 @@ def check_vehicle_geofence(vehicle_data, geofences):
     if any(status in status_carga for status in ['FINISH', 'FINALIZADO', 'CONCLUIDO', 'ENTREGUE']):
         return
 
-    # Garante que vehicle_id seja uma string válida para o cache
     vehicle_id = vehicle_data.get('placa')
-    if not vehicle_id:
-        print(f"⚠️ Veículo sem placa para cache/notificação: {vehicle_data.get('type')} - {vehicle_data.get('original_data', vehicle_data)}")
-        return # Não processa veículos sem placa
-
     current_position = (vehicle_data['latitude'], vehicle_data['longitude'])
 
     # Descubra em qual cerca (se houver) o veículo está
