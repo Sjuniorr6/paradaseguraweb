@@ -285,6 +285,8 @@ def notify_geofence_exit_event(vehicle_data, geofence_name):
 def get_devices_data(request):
     global ultima_chamada_stc, ultima_resposta_stc, ultima_chamada_t42, ultima_resposta_t42
 
+    print("\n==== INÍCIO get_devices_data ====")
+
     # Inicializa as variáveis globais com os dados do cache persistente
     ultima_resposta_stc = cache_persistente.obter_stc()
     ultima_resposta_t42 = cache_persistente.obter_t42()
@@ -298,6 +300,7 @@ def get_devices_data(request):
     
     # Verifica se é hora de atualizar os dados T42 (a cada 120 segundos)
     if tempo_atual - cache_persistente.tempo_desde_atualizacao_t42() >= 120:
+        print("Atualizando dados T42...")
         try:
             params_t42 = {
                 "commandname": "get_last_transmits",
@@ -306,6 +309,7 @@ def get_devices_data(request):
                 "format": "json"
             }
             
+            print(f"Fazendo requisição T42 para: {T42_API_URL}")
             t42_response = requests.get(
                 T42_API_URL, 
                 params=params_t42, 
@@ -313,9 +317,12 @@ def get_devices_data(request):
                 timeout=30
             )
             
+            print(f"Resposta T42 - Status: {t42_response.status_code}")
             if t42_response.status_code == 200:
                 try:
                     t42_data = t42_response.json()
+                    print(f"Dados T42 recebidos: {len(t42_data) if isinstance(t42_data, list) else 'não é lista'}")
+                    
                     if isinstance(t42_data, list):
                         processed_t42_data = []
                         for device in t42_data:
@@ -329,17 +336,20 @@ def get_devices_data(request):
                                     continue
                         
                         if processed_t42_data:
+                            print(f"Processados {len(processed_t42_data)} dispositivos T42")
                             cache_persistente.atualizar_t42(processed_t42_data)
                             ultima_resposta_t42 = processed_t42_data
                             t42_updated = True
                             print(f"✅ API T42 atualizada com {len(processed_t42_data)} dispositivos.")
                 except json.JSONDecodeError as e:
                     print(f"⚠️ Erro ao decodificar resposta T42: {str(e)}")
+                    print(f"Conteúdo da resposta: {t42_response.text[:200]}...")
         except requests.RequestException as e:
             print(f"⚠️ Erro na requisição T42: {str(e)}")
 
     # Verifica se é hora de atualizar os dados STC (a cada 60 segundos)
     if tempo_atual - cache_persistente.tempo_desde_atualizacao_stc() >= 60:
+        print("Atualizando dados STC...")
         try:
             payload_stc = {
                 "key": STC_KEY,
@@ -347,16 +357,21 @@ def get_devices_data(request):
                 "pass": STC_PASS
             }
             
+            print(f"Fazendo requisição STC para: {STC_API_URL}")
             stc_response = requests.post(STC_API_URL, json=payload_stc, verify=False)
             
+            print(f"Resposta STC - Status: {stc_response.status_code}")
             if stc_response.status_code == 200:
                 try:
                     stc_data = stc_response.json()
+                    print(f"Dados STC recebidos: {stc_data.get('success')} - {len(stc_data.get('data', [])) if stc_data.get('data') else 'sem dados'}")
+                    
                     if stc_data.get("success") is True and stc_data.get("data"):
                         # Mantém a estrutura original do STC
                         for device in stc_data["data"]:
                             device['type'] = 'STC'
                         
+                        print(f"Processados {len(stc_data['data'])} dispositivos STC")
                         cache_persistente.atualizar_stc(stc_data["data"])
                         ultima_resposta_stc = stc_data["data"]
                         stc_updated = True
@@ -365,16 +380,20 @@ def get_devices_data(request):
                         print(f"⚠️ API STC retornou resposta inválida: {stc_data}")
                 except json.JSONDecodeError as e:
                     print(f"⚠️ Erro ao decodificar resposta STC: {str(e)}")
+                    print(f"Conteúdo da resposta: {stc_response.text[:200]}...")
         except requests.RequestException as e:
             print(f"⚠️ Erro na requisição STC: {str(e)}")
 
     # Se não houve atualização, usa os dados do cache
     if not t42_updated:
+        print("Usando dados T42 do cache")
         ultima_resposta_t42 = cache_persistente.obter_t42()
     if not stc_updated:
+        print("Usando dados STC do cache")
         ultima_resposta_stc = cache_persistente.obter_stc()
 
     # Busca dados da Trafegus
+    print("Buscando dados Trafegus...")
     trafegus_vehicles = fetch_trafegus_vehicles()
     
     # Log de debug
@@ -392,6 +411,7 @@ def get_devices_data(request):
 
     # Combina todos os veículos
     all_devices = ultima_resposta_t42 + ultima_resposta_stc + trafegus_vehicles
+    print(f"Total de dispositivos: {len(all_devices)}")
 
     # Verifica geofences para cada dispositivo
     for device in all_devices:
@@ -410,6 +430,8 @@ def get_devices_data(request):
             processed_device['dataPosicao'] = device.get('datetime_utc')
 
         check_vehicle_geofence(processed_device, geofences)
+
+    print("==== FIM get_devices_data ====\n")
 
     return JsonResponse({
         "t42_devices": ultima_resposta_t42,
