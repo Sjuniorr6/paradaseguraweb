@@ -256,7 +256,7 @@ def get_devices_data(request):
     stc_debug_info = {}
 
     tempo_atual = time.time()
-    if tempo_atual - ultima_chamada_stc >= 60:
+    if tempo_atual - ultima_chamada_stc >= 120:
         # 🔵 API T42 (sempre faz a requisição)
         params_t42 = {
             "commandname": "get_last_transmits",
@@ -320,22 +320,31 @@ def get_devices_data(request):
             if stc_response.status_code == 200:
                 try:
                     stc_raw_data = stc_response.json()
-                    if "data" in stc_raw_data and stc_raw_data["data"]:
+                    # Verifica se a resposta STC é bem-sucedida e contém dados
+                    if stc_raw_data.get("success") is True and "data" in stc_raw_data and stc_raw_data["data"]:
                         ultima_resposta_stc = stc_raw_data["data"]
                         ultima_chamada_stc = tempo_atual
                         stc_updated = True
                         print("✅ API STC atualizada com novos dados.")
+                        # Atualiza o cache persistente com os novos dados válidos
+                        getattr(get_devices_data, '_ultima_resposta_stc_cache', []).clear()
+                        getattr(get_devices_data, '_ultima_resposta_stc_cache').extend(ultima_resposta_stc)
                     else:
-                        print("⚠️ API STC retornou um JSON vazio. Mantendo últimos dados válidos.")
+                        print(f"⚠️ API STC retornou um JSON vazio ou inesperado (ou limite de acessos): {stc_raw_data}. Usando últimos dados válidos do cache.")
+                        # Em caso de dados inválidos ou rate limit, usamos o cache anterior
+                        ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
                 except Exception as e:
-                    print(f"Erro ao decodificar JSON da API STC: {e}")
-                    stc_raw_data = {}
+                    print(f"Erro ao decodificar JSON da API STC: {e}. Usando últimos dados válidos do cache.")
+                    ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
             else:
-                print(f"⚠️ API STC falhou com status {stc_response.status_code}. Mantendo os últimos dados.")
+                print(f"⚠️ API STC falhou com status {stc_response.status_code}. Usando os últimos dados válidos do cache.")
+                ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
         except requests.RequestException as e:
-            print(f"⚠️ Erro ao chamar a API STC: {e}. Mantendo os últimos dados.")
+            print(f"⚠️ Erro ao chamar a API STC: {e}. Usando os últimos dados válidos do cache.")
+            ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
     else:
-        print("⏳ API STC chamada recentemente. Retornando últimos dados armazenados.")
+        print("⏳ API STC chamada recentemente. Retornando últimos dados armazenados do cache.")
+        ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
 
     # Se não atualizou, usa o último cache
     if not ultima_resposta_t42:
@@ -363,6 +372,8 @@ def get_devices_data(request):
         device["type"] = "T42"
     for device in ultima_resposta_stc:
         device["type"] = "STC"
+        device["placa"] = device.get('placa') or device.get('plate') or device.get('name') or device.get('deviceId') # Tenta obter a placa de várias chaves
+        device["statusCarga"] = device.get('statusCarga') or device.get('status') or device.get('ignicao') # Tenta obter o status de várias chaves
     for device in trafegus_vehicles: # Add Trafegus devices
         device["type"] = "Trafegus"
 
@@ -398,6 +409,8 @@ def get_devices_data(request):
             processed_device['motorista'] = device.get('motorista')
             processed_device['descricaoLocal'] = device.get('endereco') # Trafegus usa 'endereco'
             processed_device['dataPosicao'] = device.get('datetime_utc') # Trafegus usa 'datetime_utc'
+
+        print(f"DEBUG: processed_device before geofence check: {processed_device}")
 
         check_vehicle_geofence(processed_device, geofences)
 
