@@ -368,23 +368,22 @@ document.addEventListener('DOMContentLoaded', function() {
             var lng = parseFloat(device.longitude);
             if (isNaN(lat) || isNaN(lng)) return;
 
-            if (device.detalhes && device.detalhes.placa) {
+            if (device.placa) {
               // Veículo STC
               var marker = L.marker([lat, lng], {icon: stcVeiculoIcon}).addTo(markersLayer);
-              var detalhes = device.detalhes;
               var popupContent = `
                 <b>Veículo STC</b><br>
-                Placa: ${detalhes.placa || device.nome || 'N/A'}<br>
-                Modelo: ${detalhes.modelo || 'N/A'}<br>
-                Endereço: ${device.endereco || 'N/A'}<br>
-                Status: ${detalhes.status || 'N/A'}<br>
-                Velocidade: ${detalhes.velocidade || '0'} km/h<br>
-                Bateria: ${detalhes.bateria || 'N/A'}<br>
-                Ignição: ${detalhes.ignicao || 'N/A'}<br>
-                GPS Fix: ${detalhes.gpsFix || 'N/A'}<br>
-                Origem Posição: ${detalhes.originPosition || 'N/A'}<br>
-                Última Atualização: ${detalhes.data || 'N/A'}<br>
-                <b>Empresa:</b> ${device.empresa || detalhes.empresa || 'N/A'}<br>
+                Placa: ${device.placa || 'N/A'}<br>
+                Modelo: ${device.deviceModel || 'N/A'}<br>
+                Endereço: ${device.address || 'N/A'}<br>
+                Status: ${device.status || 'N/A'}<br>
+                Velocidade: ${device.speed || '0'} km/h<br>
+                Bateria: ${device.batteryPercentual || 'N/A'}<br>
+                Ignição: ${device.ignition || 'N/A'}<br>
+                GPS Fix: ${device.gpsFix || 'N/A'}<br>
+                Origem Posição: ${device.originPosition || 'N/A'}<br>
+                Última Atualização: ${device.date || 'N/A'}<br>
+                <b>Empresa:</b> ${device.empresa || 'N/A'}<br>
               `;
               marker.bindPopup(popupContent);
             } else {
