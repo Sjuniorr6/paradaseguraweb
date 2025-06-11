@@ -218,21 +218,30 @@ def notify_geofence_event(vehicle_data, geofence_name):
         else:
             image_url += 'lock.png'  # Imagem para cerca secundária
 
-        # Busca a placa corretamente (trafegus pode ser 'plate', 'placa' ou dentro de 'detalhes')
-        placa = (
-            vehicle_data.get('placa') or
-            vehicle_data.get('plate') or
-            (vehicle_data.get('detalhes', {}).get('placa') if vehicle_data.get('detalhes') else None) or
-            'N/A'
-        )
-        # Busca status corretamente
-        status = (
-            vehicle_data.get('statusCarga') or
-            vehicle_data.get('status') or
-            (vehicle_data.get('detalhes', {}).get('statusCarga') if vehicle_data.get('detalhes') else None) or
-            (vehicle_data.get('detalhes', {}).get('status') if vehicle_data.get('detalhes') else None) or
-            'N/A'
-        )
+        # Função utilitária robusta
+        def extrair_placa_status(vehicle_data):
+            # Tenta direto
+            placa = (
+                vehicle_data.get('placa') or
+                vehicle_data.get('plate') or
+                vehicle_data.get('unitnumber') or
+                vehicle_data.get('deviceId') or
+                # Trafegus: caso o dict esteja aninhado
+                (vehicle_data.get('posicoesViagem', {}).get('placa')) or
+                (vehicle_data.get('detalhes', {}).get('placa') if vehicle_data.get('detalhes') else None) or
+                'N/A'
+            )
+            status = (
+                vehicle_data.get('statusCarga') or
+                vehicle_data.get('status') or
+                (vehicle_data.get('detalhes', {}).get('statusCarga') if vehicle_data.get('detalhes') else None) or
+                (vehicle_data.get('detalhes', {}).get('status') if vehicle_data.get('detalhes') else None) or
+                (vehicle_data.get('posicoesViagem', {}).get('statusCarga')) or
+                'N/A'
+            )
+            return placa, status
+
+        placa, status = extrair_placa_status(vehicle_data)
 
         # Envia para todos os usuários conectados
         async_to_sync(channel_layer.group_send)(
@@ -254,6 +263,7 @@ def notify_geofence_event(vehicle_data, geofence_name):
     except Exception as e:
         print(f"Erro ao enviar notificação: {str(e)}")
         # Continua a execução mesmo se falhar a notificação
+
 
 #==============
 def notify_geofence_exit_event(vehicle_data, geofence_name):
