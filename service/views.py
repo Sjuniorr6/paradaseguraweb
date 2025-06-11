@@ -19,6 +19,12 @@ T42_API_URL = "https://mongol.brono.com/mongol/api.php"
 T42_USER = "gs_paradasegura"
 T42_PASS = "GGS@20xx"
 
+# Inicializa a variável global fora da função
+ultima_chamada_stc = None
+ultima_resposta_stc = None
+ultima_chamada_t42 = None
+ultima_resposta_t42 = None
+
 #==============
 def get_t42_data(request):
     # View para buscar dados brutos da API T42 e retornar como JSON sem filtro
@@ -56,10 +62,6 @@ STC_USER = "quality.paradasegura"
 STC_PASS = "6b25cff77f9bad60a73fa81daa7d06ae"
 
 # 🔥 Variáveis globais para armazenar os últimos dados válidos
-ultima_chamada_t42 = 0
-ultima_resposta_t42 = []
-ultima_chamada_stc = 0
-ultima_resposta_stc = None  # Agora começa como None para evitar sobrescritas erradas
 ultima_resposta_trafegus = []  # Adicionado para cache da Trafegus
 
 # Cache para armazenar última posição conhecida dos veículos
@@ -100,153 +102,152 @@ def check_geofence(vehicle_lat, vehicle_lon, geofence):
 #==============
 def notify_geofence_event(vehicle_data, geofence_name):
     # Função para enviar notificação quando um veículo entra em uma cerca geográfica
-    #==============
-    channel_layer = get_channel_layer()
+    try:
+        channel_layer = get_channel_layer()
 
-    # Determina qual imagem usar baseado no tipo de cerca
-    image_url = '/static/images/'
-    if 'Primario' in geofence_name:
-        image_url += 'circuit-board.png'  # Imagem para cerca primária
-    else:
-        image_url += 'lock.png'  # Imagem para cerca secundária
+        # Determina qual imagem usar baseado no tipo de cerca
+        image_url = '/static/images/'
+        if 'Primario' in geofence_name:
+            image_url += 'circuit-board.png'  # Imagem para cerca primária
+        else:
+            image_url += 'lock.png'  # Imagem para cerca secundária
 
-    # Busca a placa corretamente (trafegus pode ser 'plate', 'placa' ou dentro de 'detalhes')
-    placa = (
-        vehicle_data.get('placa') or
-        vehicle_data.get('plate') or
-        (vehicle_data.get('detalhes', {}).get('placa') if vehicle_data.get('detalhes') else None) or
-        'N/A'
-    )
-    # Busca status corretamente
-    status = (
-        vehicle_data.get('statusCarga') or
-        vehicle_data.get('status') or
-        (vehicle_data.get('detalhes', {}).get('statusCarga') if vehicle_data.get('detalhes') else None) or
-        (vehicle_data.get('detalhes', {}).get('status') if vehicle_data.get('detalhes') else None) or
-        'N/A'
-    )
+        # Busca a placa corretamente (trafegus pode ser 'plate', 'placa' ou dentro de 'detalhes')
+        placa = (
+            vehicle_data.get('placa') or
+            vehicle_data.get('plate') or
+            (vehicle_data.get('detalhes', {}).get('placa') if vehicle_data.get('detalhes') else None) or
+            'N/A'
+        )
+        # Busca status corretamente
+        status = (
+            vehicle_data.get('statusCarga') or
+            vehicle_data.get('status') or
+            (vehicle_data.get('detalhes', {}).get('statusCarga') if vehicle_data.get('detalhes') else None) or
+            (vehicle_data.get('detalhes', {}).get('status') if vehicle_data.get('detalhes') else None) or
+            'N/A'
+        )
 
-    # Envia para todos os usuários conectados
-    async_to_sync(channel_layer.group_send)(
-        "notifications",
-        {
-            "type": "notification_message",
-            "message": {
-                "type": "geofence",
-                "title": "Veículo dentro da cerca",
-                "text": f"Veículo {placa} está dentro da cerca {geofence_name}",
-                "vehicle": vehicle_data,
-                "image": image_url,
-                "geofence_type": "Primario" if "Primario" in geofence_name else "Secundario",
-                "status": status,
-                "timestamp": datetime.now().isoformat()
+        # Envia para todos os usuários conectados
+        async_to_sync(channel_layer.group_send)(
+            "notifications",
+            {
+                "type": "notification_message",
+                "message": {
+                    "type": "geofence",
+                    "title": "Veículo dentro da cerca",
+                    "text": f"Veículo {placa} está dentro da cerca {geofence_name}",
+                    "vehicle": vehicle_data,
+                    "image": image_url,
+                    "geofence_type": "Primario" if "Primario" in geofence_name else "Secundario",
+                    "status": status,
+                    "timestamp": datetime.now().isoformat()
+                }
             }
-        }
-    )
-
-    # Loga o alerta no banco de dados
-    from notificar.models import AlertLog
-    from django.contrib.auth.models import User
-
-    # Cria um alerta para cada usuário ativo
-    for user in User.objects.filter(is_active=True):
-        pass  # Nada será feito, mas o bloco do for está correto
+        )
+    except Exception as e:
+        print(f"Erro ao enviar notificação: {str(e)}")
+        # Continua a execução mesmo se falhar a notificação
 
 #==============
 def notify_geofence_exit_event(vehicle_data, geofence_name):
     # Função para enviar notificação quando um veículo sai de uma cerca geográfica
-    #==============
-    channel_layer = get_channel_layer()
-    image_url = '/static/images/lock.png'  # Pode customizar se quiser
-    async_to_sync(channel_layer.group_send)(
-        "notifications",
-        {
-            "type": "notification_message",
-            "message": {
-                "type": "geofence_exit",
-                "title": "Veículo saiu da cerca",
-                "text": f"Veículo {vehicle_data.get('placa', 'N/A')} saiu da cerca {geofence_name}",
-                "vehicle": vehicle_data,
-                "image": image_url,
-                "geofence_type": "Saida",
-                "status": vehicle_data.get('statusCarga', 'N/A'),
-                "timestamp": datetime.now().isoformat()
+    try:
+        channel_layer = get_channel_layer()
+        image_url = '/static/images/lock.png'  # Pode customizar se quiser
+        async_to_sync(channel_layer.group_send)(
+            "notifications",
+            {
+                "type": "notification_message",
+                "message": {
+                    "type": "geofence_exit",
+                    "title": "Veículo saiu da cerca",
+                    "text": f"Veículo {vehicle_data.get('placa', 'N/A')} saiu da cerca {geofence_name}",
+                    "vehicle": vehicle_data,
+                    "image": image_url,
+                    "geofence_type": "Saida",
+                    "status": vehicle_data.get('statusCarga', 'N/A'),
+                    "timestamp": datetime.now().isoformat()
+                }
             }
-        }
-    )
+        )
+    except Exception as e:
+        print(f"Erro ao enviar notificação de saída: {str(e)}")
+        # Continua a execução mesmo se falhar a notificação
 
 #==============
 def get_devices_data(request):
-    # View principal: retorna todos os dispositivos (T42, STC, Trafegus) e cercas para o frontend do mapa
-    #==============
-    global ultima_resposta_t42, ultima_resposta_stc, ultima_resposta_trafegus
+    global ultima_chamada_stc, ultima_resposta_stc, ultima_chamada_t42, ultima_resposta_t42
+
+    # Inicializa as variáveis se não existirem
+    if ultima_chamada_stc is None:
+        ultima_chamada_stc = 0
+    if ultima_resposta_stc is None:
+        ultima_resposta_stc = []
+    if ultima_chamada_t42 is None:
+        ultima_chamada_t42 = 0
+    if ultima_resposta_t42 is None:
+        ultima_resposta_t42 = []
+
     t42_updated = False
     stc_updated = False
     stc_debug_info = {}
-    ultima_resposta_t42 = []
-    ultima_resposta_stc = []
 
-    # 🔵 API T42 (sempre faz a requisição)
-    params_t42 = {
-        "commandname": "get_last_transmits",
-        "user": T42_USER,
-        "pass": T42_PASS,
-        "format": "json"
-    }
-    headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-    }
-    try:
-        t42_response = requests.get(
-            T42_API_URL, 
-            params=params_t42, 
-            verify=False, 
-            timeout=30,
-            headers=headers
-        )
-        content_type = t42_response.headers.get('content-type', '').lower()
-        if t42_response.status_code == 200 and 'application/json' in content_type:
-            try:
-                t42_data = t42_response.json()
-                if isinstance(t42_data, list):
-                    processed_t42_data = []
-                    for device in t42_data:
-                        if isinstance(device, dict):
-                            processed_device = {
-                                'type': 'T42',
-                                'latitude': device.get('latitude', 0),
-                                'longitude': device.get('longitude', 0),
-                                'plate': device.get('plate', 'N/A'),
-                                'speed': device.get('speed', 0),
-                                'direction': device.get('direction', 0),
-                                'ignition': device.get('ignition', False),
-                                'last_update': device.get('last_update', ''),
-                                'unitnumber': device.get('unitnumber', ''),
-                                'status': device.get('status', '')
-                            }
-                            processed_t42_data.append(processed_device)
-                    ultima_resposta_t42 = processed_t42_data
-                    t42_updated = True
-                    print(f"✅ API T42 atualizada com {len(processed_t42_data)} dispositivos.")
-                else:
-                    print("⚠️ API T42 retornou JSON inválido.")
-            except json.JSONDecodeError as e:
-                print(f"⚠️ API T42 retornou resposta inválida: {str(e)}.")
-        else:
-            print(f"⚠️ API T42 falhou com status {t42_response.status_code} ou tipo de conteúdo inválido ({content_type}).")
-    except requests.RequestException as e:
-        print(f"⚠️ Erro ao chamar a API T42: {str(e)}.")
-    # Se não atualizou, usa o último cache
-    if not ultima_resposta_t42:
-        print("⚠️ Usando último cache T42!")
-        ultima_resposta_t42 = getattr(get_devices_data, '_ultima_resposta_t42_cache', [])
-    else:
-        get_devices_data._ultima_resposta_t42_cache = ultima_resposta_t42
-
-    # 🔴 API STC (apenas se passou 60 segundos desde a última chamada)
     tempo_atual = time.time()
     if tempo_atual - ultima_chamada_stc >= 60:
+        # 🔵 API T42 (sempre faz a requisição)
+        params_t42 = {
+            "commandname": "get_last_transmits",
+            "user": T42_USER,
+            "pass": T42_PASS,
+            "format": "json"
+        }
+        headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+        try:
+            t42_response = requests.get(
+                T42_API_URL, 
+                params=params_t42, 
+                verify=False, 
+                timeout=30,
+                headers=headers
+            )
+            content_type = t42_response.headers.get('content-type', '').lower()
+            if t42_response.status_code == 200 and 'application/json' in content_type:
+                try:
+                    t42_data = t42_response.json()
+                    if isinstance(t42_data, list):
+                        processed_t42_data = []
+                        for device in t42_data:
+                            if isinstance(device, dict):
+                                processed_device = {
+                                    'type': 'T42',
+                                    'latitude': device.get('latitude', 0),
+                                    'longitude': device.get('longitude', 0),
+                                    'plate': device.get('plate', 'N/A'),
+                                    'speed': device.get('speed', 0),
+                                    'direction': device.get('direction', 0),
+                                    'ignition': device.get('ignition', False),
+                                    'last_update': device.get('last_update', ''),
+                                    'unitnumber': device.get('unitnumber', ''),
+                                    'status': device.get('status', '')
+                                }
+                                processed_t42_data.append(processed_device)
+                        ultima_resposta_t42 = processed_t42_data
+                        t42_updated = True
+                        print(f"✅ API T42 atualizada com {len(processed_t42_data)} dispositivos.")
+                    else:
+                        print("⚠️ API T42 retornou JSON inválido.")
+                except json.JSONDecodeError as e:
+                    print(f"⚠️ API T42 retornou resposta inválida: {str(e)}.")
+            else:
+                print(f"⚠️ API T42 falhou com status {t42_response.status_code} ou tipo de conteúdo inválido ({content_type}).")
+        except requests.RequestException as e:
+            print(f"⚠️ Erro ao chamar a API T42: {str(e)}.")
+
+        # 🔴 API STC (apenas se passou 60 segundos desde a última chamada)
         payload_stc = {
             "key": STC_KEY,
             "user": STC_USER,
@@ -257,24 +258,30 @@ def get_devices_data(request):
             if stc_response.status_code == 200:
                 try:
                     stc_raw_data = stc_response.json()
+                    if "data" in stc_raw_data and stc_raw_data["data"]:
+                        ultima_resposta_stc = stc_raw_data["data"]
+                        ultima_chamada_stc = tempo_atual
+                        stc_updated = True
+                        print("✅ API STC atualizada com novos dados.")
+                    else:
+                        print("⚠️ API STC retornou um JSON vazio. Mantendo últimos dados válidos.")
                 except Exception as e:
                     print(f"Erro ao decodificar JSON da API STC: {e}")
                     stc_raw_data = {}
-                if "data" in stc_raw_data and stc_raw_data["data"]:
-                    ultima_resposta_stc = stc_raw_data["data"]
-                    global ultima_chamada_stc # Garante que estamos usando a global
-                    ultima_chamada_stc = tempo_atual
-                    stc_updated = True
-                    print("✅ API STC atualizada com novos dados.")
-                else:
-                    print("⚠️ API STC retornou um JSON vazio. Mantendo últimos dados válidos.")
             else:
                 print(f"⚠️ API STC falhou com status {stc_response.status_code}. Mantendo os últimos dados.")
         except requests.RequestException as e:
             print(f"⚠️ Erro ao chamar a API STC: {e}. Mantendo os últimos dados.")
     else:
         print("⏳ API STC chamada recentemente. Retornando últimos dados armazenados.")
-    
+
+    # Se não atualizou, usa o último cache
+    if not ultima_resposta_t42:
+        print("⚠️ Usando último cache T42!")
+        ultima_resposta_t42 = getattr(get_devices_data, '_ultima_resposta_t42_cache', [])
+    else:
+        get_devices_data._ultima_resposta_t42_cache = ultima_resposta_t42
+
     # Se não atualizou STC, usa o último cache
     if not stc_updated and ultima_resposta_stc is None:
         print("⚠️ Nenhum dado STC válido encontrado. Usando último cache STC ou lista vazia.")
