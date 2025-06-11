@@ -305,17 +305,12 @@ def get_devices_data(request):
                 "pass": T42_PASS,
                 "format": "json"
             }
-            headers = {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
             
             t42_response = requests.get(
                 T42_API_URL, 
                 params=params_t42, 
                 verify=False, 
-                timeout=30,
-                headers=headers
+                timeout=30
             )
             
             if t42_response.status_code == 200:
@@ -326,27 +321,14 @@ def get_devices_data(request):
                         for device in t42_data:
                             if isinstance(device, dict):
                                 try:
-                                    processed_device = {
-                                        'type': 'T42',
-                                        'latitude': float(device.get('latitude', 0)),
-                                        'longitude': float(device.get('longitude', 0)),
-                                        'plate': device.get('plate', 'N/A'),
-                                        'speed': float(device.get('speed', 0)),
-                                        'direction': float(device.get('direction', 0)),
-                                        'ignition': device.get('ignition', 'OFF') == 'ON',
-                                        'last_update': device.get('last_update', ''),
-                                        'unitnumber': device.get('unitnumber', ''),
-                                        'status': device.get('status', ''),
-                                        'address': device.get('address', ''),
-                                        'battery': device.get('battery', ''),
-                                        'temperature': device.get('temp1', '')
-                                    }
-                                    processed_t42_data.append(processed_device)
-                                except (ValueError, TypeError) as e:
+                                    # Mantém a estrutura original do T42
+                                    device['type'] = 'T42'
+                                    processed_t42_data.append(device)
+                                except Exception as e:
                                     print(f"Erro ao processar dispositivo T42: {e}")
                                     continue
                         
-                        if processed_t42_data:  # Só atualiza se houver dados processados
+                        if processed_t42_data:
                             cache_persistente.atualizar_t42(processed_t42_data)
                             ultima_resposta_t42 = processed_t42_data
                             t42_updated = True
@@ -371,35 +353,14 @@ def get_devices_data(request):
                 try:
                     stc_data = stc_response.json()
                     if stc_data.get("success") is True and stc_data.get("data"):
-                        processed_stc_data = []
+                        # Mantém a estrutura original do STC
                         for device in stc_data["data"]:
-                            if isinstance(device, dict):
-                                try:
-                                    processed_device = {
-                                        'type': 'STC',
-                                        'latitude': float(device.get('latitude', 0)),
-                                        'longitude': float(device.get('longitude', 0)),
-                                        'plate': device.get('plate', 'N/A'),
-                                        'speed': float(device.get('speed', 0)),
-                                        'direction': float(device.get('direction', 0)),
-                                        'ignition': device.get('ignition', 'OFF') == 'ON',
-                                        'last_update': device.get('date', ''),
-                                        'address': device.get('address', ''),
-                                        'battery': device.get('batteryPercentual', ''),
-                                        'temperature': device.get('temp1', ''),
-                                        'gps_fix': device.get('gpsFix', '0') == '1',
-                                        'origin_position': device.get('originPosition', '')
-                                    }
-                                    processed_stc_data.append(processed_device)
-                                except (ValueError, TypeError) as e:
-                                    print(f"Erro ao processar dispositivo STC: {e}")
-                                    continue
+                            device['type'] = 'STC'
                         
-                        if processed_stc_data:  # Só atualiza se houver dados processados
-                            cache_persistente.atualizar_stc(processed_stc_data)
-                            ultima_resposta_stc = processed_stc_data
-                            stc_updated = True
-                            print("✅ API STC atualizada com novos dados.")
+                        cache_persistente.atualizar_stc(stc_data["data"])
+                        ultima_resposta_stc = stc_data["data"]
+                        stc_updated = True
+                        print("✅ API STC atualizada com novos dados.")
                     else:
                         print(f"⚠️ API STC retornou resposta inválida: {stc_data}")
                 except json.JSONDecodeError as e:
