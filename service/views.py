@@ -25,6 +25,75 @@ ultima_resposta_stc = None
 ultima_chamada_t42 = None
 ultima_resposta_t42 = None
 
+# 🔥 Variáveis globais para armazenar os últimos dados válidos
+ultima_resposta_trafegus = []  # Adicionado para cache da Trafegus
+
+# Cache para armazenar última posição conhecida dos veículos
+veiculos_cache = {}
+
+#==============
+def fetch_trafegus_vehicles():
+    """
+    Função para buscar dados da Trafegus
+    """
+    documentos = ["61064929000179", "24315867000102"]
+    auth = ("WS_GOLDENSAT", "OVERHAUL.2025")
+    
+    processed_data = []
+
+    for documento in documentos:
+        url = f"https://trafegus.over-haul.com/ws_rest/public/api/ultima-posicao-viagem?Documento={documento}"
+        
+        try:
+            response = requests.get(url, auth=auth, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            
+            # Processa os dados para extrair informações relevantes
+            for viagem in data.get("viagem", []):
+                posicao = viagem.get("posicoesViagem", {})
+                if not posicao:
+                    continue
+                    
+                # Extrai coordenadas da string
+                coordenada = posicao.get("coordenada", "")
+                lat, lng = None, None
+                if coordenada:
+                    try:
+                        lat, lng = map(float, coordenada.split(","))
+                    except (ValueError, AttributeError):
+                        continue
+                
+                if lat is None or lng is None:
+                    continue
+                    
+                status_carga = posicao.get("statusCarga", "").upper()
+                if any(status in status_carga for status in ['FINISH', 'FINALIZADO', 'CONCLUIDO', 'ENTREGUE']):
+                    continue  # pula veículos finalizados
+                
+                processed_viagem = {
+                    "placa": posicao.get("placa"),
+                    "placaCarreta": posicao.get("placaCarreta"),
+                    "motorista": posicao.get("motorista"),
+                    "statusCarga": posicao.get("statusCarga"),
+                    "descricaoLocal": posicao.get("descricaoLocal"),
+                    "dataPosicao": posicao.get("dataPosicao"),
+                    "latitude": lat,
+                    "longitude": lng,
+                    "contatoMotorista": posicao.get("contatoMotorista", []),
+                    "notasFiscais": posicao.get("notasFiscais", []),
+                    "documento": documento,
+                    "empresa": posicao.get("empresa", "N/A")
+                }
+                
+                processed_data.append(processed_viagem)
+                
+        except requests.RequestException as e:
+            print(f"Erro ao buscar dados para documento {documento}: {str(e)}")
+            continue
+    
+    return processed_data
+
 #==============
 def get_t42_data(request):
     # View para buscar dados brutos da API T42 e retornar como JSON sem filtro
@@ -61,12 +130,6 @@ STC_KEY = "d548f2c076480dcc2bd69fcbf8e6be61"
 STC_USER = "quality.paradasegura"
 STC_PASS = "6b25cff77f9bad60a73fa81daa7d06ae"
 
-# 🔥 Variáveis globais para armazenar os últimos dados válidos
-ultima_resposta_trafegus = []  # Adicionado para cache da Trafegus
-
-# Cache para armazenar última posição conhecida dos veículos
-veiculos_cache = {}
-
 #==============
 def calculate_distance(lat1, lon1, lat2, lon2):
     # Função utilitária para calcular a distância entre dois pontos geográficos (Haversine)
@@ -86,7 +149,6 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 #==============
 def check_geofence(vehicle_lat, vehicle_lon, geofence):
     # Função utilitária para verificar se um ponto está dentro de uma cerca geográfica
-    #==============
     center_lat, center_lon = geofence['center']
     radius = geofence['radius']
     
@@ -315,9 +377,6 @@ def get_devices_data(request):
     print(f"Trafegus devices: {len(trafegus_vehicles)}") # Add Trafegus debug
     for d in trafegus_vehicles:
         print(d)
-    print(f"Geofences: {len(geofences)}")
-    for g in geofences:
-        print(g)
     print("==============================\n")
 
     # Combina todos os veículos
@@ -326,8 +385,6 @@ def get_devices_data(request):
     # Itera sobre todos os dispositivos para verificar geofences e notificar
     for device in all_devices:
         # Adaptação para o formato esperado por check_vehicle_geofence
-        # Certifique-se de que 'device' contém as chaves 'latitude', 'longitude' e 'placa'
-        # de forma consistente para T42, STC e Trafegus.
         processed_device = {
             'type': device.get('type'),
             'latitude': device.get('latitude') or device.get('lat'),
@@ -346,10 +403,10 @@ def get_devices_data(request):
 
     # Sempre retorna JSON válido
     return JsonResponse({
-        "t42_devices": ultima_resposta_t42, # Keep for existing logic, if any
-        "stc_devices": ultima_resposta_stc, # Keep for existing logic, if any
-        "trafegus_vehicles": trafegus_vehicles, # Add Trafegus vehicles
-        "all_devices": all_devices, # New combined list
+        "t42_devices": ultima_resposta_t42,
+        "stc_devices": ultima_resposta_stc,
+        "trafegus_vehicles": trafegus_vehicles,
+        "all_devices": all_devices,
         "geofences": geofences
     })
 
@@ -600,3 +657,21 @@ def check_vehicle_geofence(vehicle_data, geofences):
         'last_update': datetime.now(),
         'status': status_carga
     }
+
+# Adiciona as cercas geográficas
+geofences = [
+    {"name": "Posto Graal Rubi", "center": [-22.10141479570105, -47.8242335993846], "radius": 5000},
+    {"name": "Posto Graal Rubi2", "center": [-22.10141479570105, -47.8242335993846], "radius": 150},
+    {"name": "Posto Da Serra", "center": [-21.775, -47.5381], "radius": 5000},
+    {"name": "Posto Da Serra2", "center": [-21.775, -47.5381], "radius": 150},
+    {"name": "Posto Capixabom", "center": [-21.3648, -48.7574], "radius": 5000},
+    {"name": "posto Capixabom 2", "center": [-21.3648, -48.7574], "radius": 200},
+    {"name": "Posto JN", "center": [-20.5542, -49.7085], "radius": 5000},
+    {"name": "Posto JN2", "center": [-20.5542, -49.7085], "radius": 200},
+    {"name": "Posto Buritizinho", "center": [-20.5334, -47.846], "radius": 5000},
+    {"name": "posto Posto Buritizinho2", "center": [-20.5334, -47.846], "radius": 200},
+    {"name": "Posto Trevao", "center": [-18.8786, -49.0557], "radius": 5000},
+    {"name": "posto Trevao2", "center": [-18.8786, -49.0557], "radius": 200},
+    {"name": "Posto Brasileirao", "center": [-18.661527, -48.161337], "radius": 5000},
+    {"name": "posto Brasileirao2", "center": [-18.661527, -48.161337], "radius": 200},
+]
