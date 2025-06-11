@@ -209,16 +209,13 @@
 document.addEventListener('DOMContentLoaded', function() {
   // Configuração do WebSocket (sem alterações)
   const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
-  const ws_path = ws_scheme + '://' + window.location.host + '/notifications/';
+  const ws_path = ws_scheme + '://' + window.location.host + '/ws/notifications/';
   const socket = new WebSocket(ws_path);
 
   socket.onmessage = function(e) {
     const data = JSON.parse(e.data);
     if (data.type === 'notification_message' || data.type === 'notification') {
       showNotification(data.message);
-    } else if (data.type === 'remove_alert') {
-      console.log(`Recebida mensagem de remoção de alerta para ID: ${data.message.id}`);
-      removeNotificationFromDOM(data.message.id, false); // Não foi fechamento manual
     }
   };
 
@@ -231,31 +228,13 @@ document.addEventListener('DOMContentLoaded', function() {
   const notificationsPanel = document.getElementById('notifications');
   const badge = document.getElementById('alert-badge');
 
-  bell.onclick = function(event) {
-    event.stopPropagation(); // Evita que o clique se propague para o document
+  bell.onclick = function() {
     if (notificationsPanel.style.display === 'none') {
       notificationsPanel.style.display = 'block';
-      badge.style.display = 'none'; // Esconde o badge ao abrir o painel
-      alertCount = 0; // Reseta a contagem de alertas não lidos
+      badge.style.display = 'none';
+      alertCount = 0;
     } else {
       notificationsPanel.style.display = 'none';
-      // Ao fechar, se houver novos alertas, o badge deve reaparecer
-      if (alertCount > 0) {
-        badge.style.display = 'block';
-      }
-    }
-  };
-
-  // Fecha o painel de notificações se clicar fora dele ou do sino
-  document.onclick = function(event) {
-    if (notificationsPanel.style.display === 'block' &&
-        !notificationsPanel.contains(event.target) &&
-        event.target !== bell &&
-        !bell.contains(event.target)) {
-      notificationsPanel.style.display = 'none';
-      if (alertCount > 0) {
-        badge.style.display = 'block';
-      }
     }
   };
 
@@ -264,127 +243,51 @@ document.addEventListener('DOMContentLoaded', function() {
     notificationDiv.classList.add('notification-item');
     notificationDiv.classList.add(message.geofence_type === 'Primario' ? 'primary' : 'secondary');
 
-    // Adiciona evento de clique para fechar o alerta ao clicar em qualquer lugar dele
-    notificationDiv.onclick = function() {
-      closeAlert(message.id, notificationDiv);
-    };
-
     // Botão de fechar
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = '&times;';
     closeBtn.style.cssText = `
       background: transparent;
       border: none;
+      color: #888;
       font-size: 1.5rem;
+      font-weight: bold;
       cursor: pointer;
-      color: #999;
-      margin-left: auto;
-      padding: 0 5px;
-      line-height: 1;
+      margin-left: 10px;
+      margin-right: 0;
+      margin-top: -8px;
       align-self: flex-start;
     `;
     closeBtn.onclick = function() {
-      closeAlert(message.id, notificationDiv);
+      notificationDiv.style.animation = 'slideOut 0.5s ease-out forwards';
+      setTimeout(() => notificationDiv.remove(), 500);
+      updateBadge();
     };
-    notificationDiv.setAttribute('data-alert-id', message.id);
 
-    const img = document.createElement('img');
-    img.src = message.image;
-    img.alt = 'Icone de Alerta';
-
-    const contentDiv = document.createElement('div');
-    contentDiv.classList.add('notification-content');
-    contentDiv.innerHTML = `
-      <strong>${message.title}</strong>
-      <p>${message.text}</p>
-      <small>${message.timestamp}</small>
+    notificationDiv.innerHTML = `
+        <img src="${message.image || '{% static "images/default-icon.png" %}'}" alt="Ícone">
+        <div class="notification-content">
+          <strong>${message.title || 'Notificação'}</strong>
+          <p>${message.text || 'Detalhes não disponíveis.'}</p>
+          <p>Status: ${message.status || 'N/A'}</p>
+          <small>${new Date(message.timestamp).toLocaleString()}</small>
+        </div>
     `;
-
-    notificationDiv.appendChild(img);
-    notificationDiv.appendChild(contentDiv);
     notificationDiv.appendChild(closeBtn);
 
-    notificationsPanel.prepend(notificationDiv);
+    notificationsPanel.appendChild(notificationDiv);
+    alertCount++;
+    updateBadge();
+  }
 
-    if (notificationsPanel.style.display === 'none') {
-      alertCount++;
-      badge.textContent = alertCount;
+  function updateBadge() {
+    const count = notificationsPanel.querySelectorAll('.notification-item').length;
+    if (count > 0 && notificationsPanel.style.display === 'none') {
+      badge.textContent = count;
       badge.style.display = 'block';
+    } else {
+      badge.style.display = 'none';
     }
-
-    // Remove a notificação automaticamente após 15 segundos se não for clicada
-    setTimeout(() => {
-      if (notificationDiv.parentNode) {
-        notificationDiv.style.animation = 'slideOut 0.5s ease-in forwards';
-        notificationDiv.addEventListener('animationend', () => {
-          if (notificationDiv.parentNode) {
-            removeNotificationFromDOM(message.id, false);
-          }
-        });
-      }
-    }, 15000);
-  }
-
-  function closeAlert(alertId, notificationElement) {
-    // Animação de saída antes de remover
-    notificationElement.style.animation = 'slideOut 0.5s ease-in forwards';
-    notificationElement.addEventListener('animationend', () => {
-        removeNotificationFromDOM(alertId, true);
-    });
-
-    // Enviar requisição para o backend para remover o alerta do log/banco de dados
-    fetch('/remove-alert/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-CSRFToken': getCookie('csrftoken')
-      },
-      body: `alert_id=${alertId}`
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.status === 'success') {
-        console.log(`Alerta ${alertId} removido do backend com sucesso.`);
-      } else {
-        console.error(`Erro ao remover alerta ${alertId} do backend:`, data.message);
-      }
-    })
-    .catch(error => console.error('Erro na requisição de remoção de alerta:', error));
-  }
-
-  function removeNotificationFromDOM(alertId, wasManualClose) {
-    const notificationElement = document.querySelector(`[data-alert-id="${alertId}"]`);
-    if (notificationElement) {
-      notificationElement.remove();
-      // Se a notificação foi fechada manualmente e o painel de notificações não está visível,
-      // decrementa a contagem do badge.
-      if (wasManualClose && notificationsPanel.style.display === 'none') {
-        alertCount = Math.max(0, alertCount - 1);
-        badge.textContent = alertCount;
-        badge.style.display = alertCount > 0 ? 'block' : 'none';
-      } else if (!wasManualClose && notificationsPanel.style.display === 'none') {
-        // Se a notificação foi removida por timeout e o painel não está visível, apenas remove
-        // do DOM. A contagem do badge é para alertas VISÍVEIS.
-        // Não precisamos ajustar a contagem aqui porque alertas de timeout não são contados
-        // no badge a menos que o painel esteja fechado.
-      }
-    }
-  }
-
-  // Função para obter o CSRF token
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
-        }
-      }
-    }
-    return cookieValue;
   }
 
   // Mapa e Marcadores (sem alterações significativas na lógica, apenas nos ícones se necessário)
@@ -465,22 +368,23 @@ document.addEventListener('DOMContentLoaded', function() {
             var lng = parseFloat(device.longitude);
             if (isNaN(lat) || isNaN(lng)) return;
 
-            if (device.placa) {
+            if (device.detalhes && device.detalhes.placa) {
               // Veículo STC
               var marker = L.marker([lat, lng], {icon: stcVeiculoIcon}).addTo(markersLayer);
+              var detalhes = device.detalhes;
               var popupContent = `
                 <b>Veículo STC</b><br>
-                Placa: ${device.placa || 'N/A'}<br>
-                Modelo: ${device.deviceModel || 'N/A'}<br>
-                Endereço: ${device.address || 'N/A'}<br>
-                Status: ${device.status || 'N/A'}<br>
-                Velocidade: ${device.speed || '0'} km/h<br>
-                Bateria: ${device.batteryPercentual || 'N/A'}<br>
-                Ignição: ${device.ignition || 'N/A'}<br>
-                GPS Fix: ${device.gpsFix || 'N/A'}<br>
-                Origem Posição: ${device.originPosition || 'N/A'}<br>
-                Última Atualização: ${device.date || 'N/A'}<br>
-                <b>Empresa:</b> ${device.empresa || 'N/A'}<br>
+                Placa: ${detalhes.placa || device.nome || 'N/A'}<br>
+                Modelo: ${detalhes.modelo || 'N/A'}<br>
+                Endereço: ${device.endereco || 'N/A'}<br>
+                Status: ${detalhes.status || 'N/A'}<br>
+                Velocidade: ${detalhes.velocidade || '0'} km/h<br>
+                Bateria: ${detalhes.bateria || 'N/A'}<br>
+                Ignição: ${detalhes.ignicao || 'N/A'}<br>
+                GPS Fix: ${detalhes.gpsFix || 'N/A'}<br>
+                Origem Posição: ${detalhes.originPosition || 'N/A'}<br>
+                Última Atualização: ${detalhes.data || 'N/A'}<br>
+                <b>Empresa:</b> ${device.empresa || detalhes.empresa || 'N/A'}<br>
               `;
               marker.bindPopup(popupContent);
             } else {
