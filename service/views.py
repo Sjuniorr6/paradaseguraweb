@@ -714,15 +714,29 @@ def check_vehicle_geofence(vehicle_data, geofences):
             current_geofence = geofence['name']
             break
 
-    # Só notifica se entrou em uma nova cerca (ou saiu e entrou de novo)
-    last_geofence = veiculos_cache.get(vehicle_id, {}).get('geofence')
+    # Obtém o último estado do veículo do cache
+    last_state = veiculos_cache.get(vehicle_id, {})
+    last_geofence = last_state.get('geofence')
+    last_update = last_state.get('last_update', datetime.min)
+
+    # Verifica se deve emitir um novo alerta
+    should_notify = False
+    
+    # Caso 1: Entrou em uma nova cerca
     if current_geofence and last_geofence != current_geofence:
-        notify_geofence_event(vehicle_data, current_geofence)
-        vehicle_data['current_geofence'] = current_geofence
-    # Notifica saída de cerca
-    if last_geofence and not current_geofence:
+        should_notify = True
+    # Caso 2: Saiu de uma cerca
+    elif last_geofence and not current_geofence:
         notify_geofence_exit_event(vehicle_data, last_geofence)
         vehicle_data['current_geofence'] = None
+    # Caso 3: Continua na mesma cerca, mas passou tempo suficiente para um novo alerta
+    elif current_geofence and (datetime.now() - last_update).total_seconds() >= 300:  # 5 minutos
+        should_notify = True
+
+    # Emite o alerta se necessário
+    if should_notify:
+        notify_geofence_event(vehicle_data, current_geofence)
+        vehicle_data['current_geofence'] = current_geofence
 
     # Atualiza o cache
     veiculos_cache[vehicle_id] = {
