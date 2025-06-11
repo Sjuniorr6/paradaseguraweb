@@ -12,7 +12,6 @@ urlpatterns = [
     path('get_devices_data/', get_devices_data, name='get_devices_data'),
     path('trafegus_veiculos/', views.trafegus_veiculos, name="trafegus_veiculos"),
     path('service/trafegus_veiculos/', views.trafegus_veiculos, name="trafegus_veiculos"),
-    path('remove-alert/', views.remove_alert, name='remove_alert'),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=os.path.join(settings.BASE_DIR, 'static'))
