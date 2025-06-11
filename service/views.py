@@ -631,7 +631,7 @@ def check_vehicle_geofence(vehicle_data, geofences):
     if not vehicle_data.get('latitude') or not vehicle_data.get('longitude'):
         return
 
-    status_carga = vehicle_data.get('statusCarga', '').upper()
+    status_carga = str(vehicle_data.get('statusCarga', '')).upper()
     if any(status in status_carga for status in ['FINISH', 'FINALIZADO', 'CONCLUIDO', 'ENTREGUE']):
         return
 
