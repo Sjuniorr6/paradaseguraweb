@@ -241,6 +241,12 @@ def notify_geofence_exit_event(vehicle_data, geofence_name):
 def get_devices_data(request):
     global ultima_chamada_stc, ultima_resposta_stc, ultima_chamada_t42, ultima_resposta_t42
 
+    # Inicializa os caches persistentes de função se não existirem
+    if not hasattr(get_devices_data, '_ultima_resposta_stc_cache'):
+        get_devices_data._ultima_resposta_stc_cache = []
+    if not hasattr(get_devices_data, '_ultima_resposta_t42_cache'):
+        get_devices_data._ultima_resposta_t42_cache = []
+
     # Inicializa as variáveis se não existirem
     if ultima_chamada_stc is None:
         ultima_chamada_stc = 0
