@@ -31,6 +31,39 @@ ultima_resposta_trafegus = []  # Adicionado para cache da Trafegus
 # Cache para armazenar última posição conhecida dos veículos
 veiculos_cache = {}
 
+# Cache persistente para armazenar os últimos dados válidos
+class CachePersistente:
+    def __init__(self):
+        self._stc_cache = []
+        self._t42_cache = []
+        self._ultima_atualizacao_stc = 0
+        self._ultima_atualizacao_t42 = 0
+
+    def atualizar_stc(self, dados):
+        if dados:
+            self._stc_cache = dados
+            self._ultima_atualizacao_stc = time.time()
+
+    def atualizar_t42(self, dados):
+        if dados:
+            self._t42_cache = dados
+            self._ultima_atualizacao_t42 = time.time()
+
+    def obter_stc(self):
+        return self._stc_cache
+
+    def obter_t42(self):
+        return self._t42_cache
+
+    def tempo_desde_atualizacao_stc(self):
+        return time.time() - self._ultima_atualizacao_stc
+
+    def tempo_desde_atualizacao_t42(self):
+        return time.time() - self._ultima_atualizacao_t42
+
+# Instância global do cache persistente
+cache_persistente = CachePersistente()
+
 #==============
 def fetch_trafegus_vehicles():
     """
@@ -241,40 +274,29 @@ def notify_geofence_exit_event(vehicle_data, geofence_name):
 def get_devices_data(request):
     global ultima_chamada_stc, ultima_resposta_stc, ultima_chamada_t42, ultima_resposta_t42
 
-    # Inicializa os caches persistentes de função se não existirem
-    if not hasattr(get_devices_data, '_ultima_resposta_stc_cache'):
-        get_devices_data._ultima_resposta_stc_cache = []
-    if not hasattr(get_devices_data, '_ultima_resposta_t42_cache'):
-        get_devices_data._ultima_resposta_t42_cache = []
-
-    # Garante que as variáveis globais usem os caches persistentes desde o início
-    ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
-    ultima_resposta_t42 = getattr(get_devices_data, '_ultima_resposta_t42_cache', [])
-
-    # Inicializa as variáveis de tempo da última chamada se não existirem
-    if ultima_chamada_stc is None:
-        ultima_chamada_stc = 0
-    if ultima_chamada_t42 is None:
-        ultima_chamada_t42 = 0
+    # Inicializa as variáveis globais com os dados do cache persistente
+    ultima_resposta_stc = cache_persistente.obter_stc()
+    ultima_resposta_t42 = cache_persistente.obter_t42()
 
     t42_updated = False
     stc_updated = False
-    stc_debug_info = {}
 
     tempo_atual = time.time()
-    if tempo_atual - ultima_chamada_stc >= 120:
-        # 🔵 API T42 (sempre faz a requisição)
-        params_t42 = {
-            "commandname": "get_last_transmits",
-            "user": T42_USER,
-            "pass": T42_PASS,
-            "format": "json"
-        }
-        headers = {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        }
+    
+    # Verifica se é hora de atualizar os dados T42 (a cada 120 segundos)
+    if tempo_atual - cache_persistente.tempo_desde_atualizacao_t42() >= 120:
         try:
+            params_t42 = {
+                "commandname": "get_last_transmits",
+                "user": T42_USER,
+                "pass": T42_PASS,
+                "format": "json"
+            }
+            headers = {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+            
             t42_response = requests.get(
                 T42_API_URL, 
                 params=params_t42, 
@@ -282,8 +304,8 @@ def get_devices_data(request):
                 timeout=30,
                 headers=headers
             )
-            content_type = t42_response.headers.get('content-type', '').lower()
-            if t42_response.status_code == 200 and 'application/json' in content_type:
+            
+            if t42_response.status_code == 200:
                 try:
                     t42_data = t42_response.json()
                     if isinstance(t42_data, list):
@@ -303,69 +325,58 @@ def get_devices_data(request):
                                     'status': device.get('status', '')
                                 }
                                 processed_t42_data.append(processed_device)
+                        
+                        # Atualiza o cache persistente com os novos dados
+                        cache_persistente.atualizar_t42(processed_t42_data)
                         ultima_resposta_t42 = processed_t42_data
                         t42_updated = True
                         print(f"✅ API T42 atualizada com {len(processed_t42_data)} dispositivos.")
-                    else:
-                        print("⚠️ API T42 retornou JSON inválido.")
                 except json.JSONDecodeError as e:
-                    print(f"⚠️ API T42 retornou resposta inválida: {str(e)}.")
-            else:
-                print(f"⚠️ API T42 falhou com status {t42_response.status_code} ou tipo de conteúdo inválido ({content_type}).")
+                    print(f"⚠️ Erro ao decodificar resposta T42: {str(e)}")
         except requests.RequestException as e:
-            print(f"⚠️ Erro ao chamar a API T42: {str(e)}.")
+            print(f"⚠️ Erro na requisição T42: {str(e)}")
 
-        # 🔴 API STC (apenas se passou 60 segundos desde a última chamada)
-        payload_stc = {
-            "key": STC_KEY,
-            "user": STC_USER,
-            "pass": STC_PASS
-        }
+    # Verifica se é hora de atualizar os dados STC (a cada 60 segundos)
+    if tempo_atual - cache_persistente.tempo_desde_atualizacao_stc() >= 60:
         try:
+            payload_stc = {
+                "key": STC_KEY,
+                "user": STC_USER,
+                "pass": STC_PASS
+            }
+            
             stc_response = requests.post(STC_API_URL, json=payload_stc, verify=False)
+            
             if stc_response.status_code == 200:
                 try:
-                    stc_raw_data = stc_response.json()
-                    # Verifica se a resposta STC é bem-sucedida e contém dados
-                    if stc_raw_data.get("success") is True and "data" in stc_raw_data and stc_raw_data["data"]:
-                        ultima_resposta_stc = stc_raw_data["data"]
-                        ultima_chamada_stc = tempo_atual
+                    stc_data = stc_response.json()
+                    if stc_data.get("success") is True and stc_data.get("data"):
+                        # Atualiza o cache persistente com os novos dados
+                        cache_persistente.atualizar_stc(stc_data["data"])
+                        ultima_resposta_stc = stc_data["data"]
                         stc_updated = True
                         print("✅ API STC atualizada com novos dados.")
-                        # Atualiza o cache persistente com os novos dados válidos
-                        getattr(get_devices_data, '_ultima_resposta_stc_cache', []).clear()
-                        getattr(get_devices_data, '_ultima_resposta_stc_cache').extend(ultima_resposta_stc)
                     else:
-                        print(f"⚠️ API STC retornou um JSON vazio ou inesperado (ou limite de acessos): {stc_raw_data}. Usando últimos dados válidos do cache.")
-                        # Em caso de dados inválidos ou rate limit, usamos o cache anterior
-                        ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
-                except Exception as e:
-                    print(f"Erro ao decodificar JSON da API STC: {e}. Usando últimos dados válidos do cache.")
-                    ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
-            else:
-                print(f"⚠️ API STC falhou com status {stc_response.status_code}. Usando os últimos dados válidos do cache.")
-                ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
+                        print(f"⚠️ API STC retornou resposta inválida: {stc_data}")
+                except json.JSONDecodeError as e:
+                    print(f"⚠️ Erro ao decodificar resposta STC: {str(e)}")
         except requests.RequestException as e:
-            print(f"⚠️ Erro ao chamar a API STC: {e}. Usando os últimos dados válidos do cache.")
-            ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
-    else:
-        print("⏳ API STC chamada recentemente. Retornando últimos dados armazenados do cache.")
-        ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
+            print(f"⚠️ Erro na requisição STC: {str(e)}")
 
-    # Buscar dados da Trafegus (mantido como estava)
+    # Busca dados da Trafegus
     trafegus_vehicles = fetch_trafegus_vehicles()
     
-    # Se houver dispositivos, adiciona o tipo
+    # Adiciona o tipo para cada dispositivo
     for device in ultima_resposta_t42:
         device["type"] = "T42"
     for device in ultima_resposta_stc:
         device["type"] = "STC"
-        device["placa"] = device.get('placa') or device.get('plate') or device.get('name') or device.get('deviceId') # Tenta obter a placa de várias chaves
-        device["statusCarga"] = device.get('statusCarga') or device.get('status') or device.get('ignicao') # Tenta obter o status de várias chaves
-    for device in trafegus_vehicles: # Add Trafegus devices
+        device["placa"] = device.get('placa') or device.get('plate') or device.get('name') or device.get('deviceId')
+        device["statusCarga"] = device.get('statusCarga') or device.get('status') or device.get('ignicao')
+    for device in trafegus_vehicles:
         device["type"] = "Trafegus"
 
-    # DEBUG: Mostra os valores atuais no console
+    # Log de debug
     print("\n==== DEBUG get_devices_data ====")
     print(f"STC devices: {len(ultima_resposta_stc)}")
     for d in ultima_resposta_stc:
@@ -373,7 +384,7 @@ def get_devices_data(request):
     print(f"T42 devices: {len(ultima_resposta_t42)}")
     for d in ultima_resposta_t42:
         print(d)
-    print(f"Trafegus devices: {len(trafegus_vehicles)}") # Add Trafegus debug
+    print(f"Trafegus devices: {len(trafegus_vehicles)}")
     for d in trafegus_vehicles:
         print(d)
     print("==============================\n")
@@ -381,28 +392,24 @@ def get_devices_data(request):
     # Combina todos os veículos
     all_devices = ultima_resposta_t42 + ultima_resposta_stc + trafegus_vehicles
 
-    # Itera sobre todos os dispositivos para verificar geofences e notificar
+    # Verifica geofences para cada dispositivo
     for device in all_devices:
-        # Adaptação para o formato esperado por check_vehicle_geofence
         processed_device = {
             'type': device.get('type'),
             'latitude': device.get('latitude') or device.get('lat'),
             'longitude': device.get('longitude') or device.get('lon'),
             'placa': device.get('plate') or device.get('placa') or (device.get('detalhes', {}).get('placa') if device.get('detalhes') else None) or device.get('unitnumber'),
             'statusCarga': device.get('statusCarga') or device.get('status'),
-            'detalhes': device.get('detalhes', {}) # Garante que detalhes exista, mesmo que vazio
+            'detalhes': device.get('detalhes', {})
         }
-        # Adicione outros campos relevantes do Trafegus que possam ser usados no popup/notificação
+        
         if device.get('type') == 'Trafegus':
             processed_device['motorista'] = device.get('motorista')
-            processed_device['descricaoLocal'] = device.get('endereco') # Trafegus usa 'endereco'
-            processed_device['dataPosicao'] = device.get('datetime_utc') # Trafegus usa 'datetime_utc'
-
-        print(f"DEBUG: processed_device before geofence check: {processed_device}")
+            processed_device['descricaoLocal'] = device.get('endereco')
+            processed_device['dataPosicao'] = device.get('datetime_utc')
 
         check_vehicle_geofence(processed_device, geofences)
 
-    # Sempre retorna JSON válido
     return JsonResponse({
         "t42_devices": ultima_resposta_t42,
         "stc_devices": ultima_resposta_stc,
