@@ -287,19 +287,25 @@ def get_devices_data(request):
 
     print("\n==== INÍCIO get_devices_data ====")
 
-    # Inicializa as variáveis globais com os dados do cache persistente
-    ultima_resposta_stc = cache_persistente.obter_stc()
-    ultima_resposta_t42 = cache_persistente.obter_t42()
+    # Inicializa variáveis globais se necessário
+    if ultima_resposta_stc is None:
+        ultima_resposta_stc = []
+    if ultima_resposta_t42 is None:
+        ultima_resposta_t42 = []
+    if ultima_chamada_stc is None:
+        ultima_chamada_stc = 0
+    if ultima_chamada_t42 is None:
+        ultima_chamada_t42 = 0
 
-    print(f"Cache inicial - STC: {len(ultima_resposta_stc)} dispositivos, T42: {len(ultima_resposta_t42)} dispositivos")
+    print(f"Globais - STC: {len(ultima_resposta_stc)} dispositivos, T42: {len(ultima_resposta_t42)} dispositivos")
 
     t42_updated = False
     stc_updated = False
 
     tempo_atual = time.time()
-    
-    # Verifica se é hora de atualizar os dados T42 (a cada 120 segundos)
-    if tempo_atual - cache_persistente.tempo_desde_atualizacao_t42() >= 120:
+
+    # Atualiza dados T42 (a cada 120 segundos)
+    if tempo_atual - ultima_chamada_t42 >= 120:
         print("Atualizando dados T42...")
         try:
             params_t42 = {
@@ -308,38 +314,33 @@ def get_devices_data(request):
                 "pass": T42_PASS,
                 "format": "json"
             }
-            
             print(f"Fazendo requisição T42 para: {T42_API_URL}")
             t42_response = requests.get(
-                T42_API_URL, 
-                params=params_t42, 
-                verify=False, 
+                T42_API_URL,
+                params=params_t42,
+                verify=False,
                 timeout=30
             )
-            
             print(f"Resposta T42 - Status: {t42_response.status_code}")
             if t42_response.status_code == 200:
                 try:
                     t42_data = t42_response.json()
                     print(f"Dados T42 recebidos: {len(t42_data) if isinstance(t42_data, list) else 'não é lista'}")
-                    
                     if isinstance(t42_data, list):
                         processed_t42_data = []
                         for device in t42_data:
                             if isinstance(device, dict):
                                 try:
-                                    # Mantém a estrutura original do T42
                                     device['type'] = 'T42'
                                     processed_t42_data.append(device)
                                 except Exception as e:
                                     print(f"Erro ao processar dispositivo T42: {e}")
                                     continue
-                        
                         if processed_t42_data:
                             print(f"Processados {len(processed_t42_data)} dispositivos T42")
-                            cache_persistente.atualizar_t42(processed_t42_data)
                             ultima_resposta_t42 = processed_t42_data
                             t42_updated = True
+                            ultima_chamada_t42 = tempo_atual
                             print(f"✅ API T42 atualizada com {len(processed_t42_data)} dispositivos.")
                 except json.JSONDecodeError as e:
                     print(f"⚠️ Erro ao decodificar resposta T42: {str(e)}")
@@ -347,8 +348,8 @@ def get_devices_data(request):
         except requests.RequestException as e:
             print(f"⚠️ Erro na requisição T42: {str(e)}")
 
-    # Verifica se é hora de atualizar os dados STC (a cada 60 segundos)
-    if tempo_atual - cache_persistente.tempo_desde_atualizacao_stc() >= 60:
+    # Atualiza dados STC (a cada 60 segundos)
+    if tempo_atual - ultima_chamada_stc >= 60:
         print("Atualizando dados STC...")
         try:
             payload_stc = {
@@ -356,25 +357,20 @@ def get_devices_data(request):
                 "user": STC_USER,
                 "pass": STC_PASS
             }
-            
             print(f"Fazendo requisição STC para: {STC_API_URL}")
             stc_response = requests.post(STC_API_URL, json=payload_stc, verify=False)
-            
             print(f"Resposta STC - Status: {stc_response.status_code}")
             if stc_response.status_code == 200:
                 try:
                     stc_data = stc_response.json()
                     print(f"Dados STC recebidos: {stc_data.get('success')} - {len(stc_data.get('data', [])) if stc_data.get('data') else 'sem dados'}")
-                    
                     if stc_data.get("success") is True and stc_data.get("data"):
-                        # Mantém a estrutura original do STC
                         for device in stc_data["data"]:
                             device['type'] = 'STC'
-                        
                         print(f"Processados {len(stc_data['data'])} dispositivos STC")
-                        cache_persistente.atualizar_stc(stc_data["data"])
                         ultima_resposta_stc = stc_data["data"]
                         stc_updated = True
+                        ultima_chamada_stc = tempo_atual
                         print("✅ API STC atualizada com novos dados.")
                     else:
                         print(f"⚠️ API STC retornou resposta inválida: {stc_data}")
@@ -384,18 +380,10 @@ def get_devices_data(request):
         except requests.RequestException as e:
             print(f"⚠️ Erro na requisição STC: {str(e)}")
 
-    # Se não houve atualização, usa os dados do cache
-    if not t42_updated:
-        print("Usando dados T42 do cache")
-        ultima_resposta_t42 = cache_persistente.obter_t42()
-    if not stc_updated:
-        print("Usando dados STC do cache")
-        ultima_resposta_stc = cache_persistente.obter_stc()
-
-    # Busca dados da Trafegus
+    # Busca dados da Trafegus (sempre ao vivo)
     print("Buscando dados Trafegus...")
     trafegus_vehicles = fetch_trafegus_vehicles()
-    
+
     # Log de debug
     print("\n==== DEBUG get_devices_data ====")
     print(f"STC devices: {len(ultima_resposta_stc)}")
@@ -423,7 +411,7 @@ def get_devices_data(request):
             'statusCarga': device.get('statusCarga') or device.get('status'),
             'detalhes': device.get('detalhes', {})
         }
-        
+
         if device.get('type') == 'Trafegus':
             processed_device['motorista'] = device.get('motorista')
             processed_device['descricaoLocal'] = device.get('endereco')
