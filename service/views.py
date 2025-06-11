@@ -111,17 +111,32 @@ def fetch_trafegus_vehicles():
                 if lat is None or lng is None:
                     continue
                     
-                status_carga = posicao.get("statusCarga", "").upper()
-                if any(status in status_carga for status in ['FINISH', 'FINALIZADO', 'CONCLUIDO', 'ENTREGUE']):
+                # Extrai placa, motorista e statusCarga de forma mais robusta
+                placa = (
+                    posicao.get("placa") or
+                    viagem.get("placa") or
+                    "N/A"
+                )
+                motorista = (
+                    posicao.get("motorista") or
+                    "N/A"
+                )
+                status_carga = (
+                    posicao.get("statusCarga") or
+                    viagem.get("statusCarga") or
+                    "N/A"
+                )
+
+                if any(status in status_carga.upper() for status in ['FINISH', 'FINALIZADO', 'CONCLUIDO', 'ENTREGUE']):
                     continue  # pula veículos finalizados
                 
                 processed_viagem = {
-                    "placa": posicao.get("placa"),
-                    "placaCarreta": posicao.get("placaCarreta"),
-                    "motorista": posicao.get("motorista"),
-                    "statusCarga": posicao.get("statusCarga"),
-                    "descricaoLocal": posicao.get("descricaoLocal"),
-                    "dataPosicao": posicao.get("dataPosicao"),
+                    "placa": placa,
+                    "placaCarreta": posicao.get("placaCarreta") or "N/A",
+                    "motorista": motorista,
+                    "statusCarga": status_carga,
+                    "descricaoLocal": posicao.get("descricaoLocal") or "N/A",
+                    "dataPosicao": posicao.get("dataPosicao") or "N/A",
                     "latitude": lat,
                     "longitude": lng,
                     "contatoMotorista": posicao.get("contatoMotorista", []),
