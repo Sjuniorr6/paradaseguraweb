@@ -247,15 +247,15 @@ def get_devices_data(request):
     if not hasattr(get_devices_data, '_ultima_resposta_t42_cache'):
         get_devices_data._ultima_resposta_t42_cache = []
 
-    # Inicializa as variáveis se não existirem
+    # Garante que as variáveis globais usem os caches persistentes desde o início
+    ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
+    ultima_resposta_t42 = getattr(get_devices_data, '_ultima_resposta_t42_cache', [])
+
+    # Inicializa as variáveis de tempo da última chamada se não existirem
     if ultima_chamada_stc is None:
         ultima_chamada_stc = 0
-    if ultima_resposta_stc is None:
-        ultima_resposta_stc = []
     if ultima_chamada_t42 is None:
         ultima_chamada_t42 = 0
-    if ultima_resposta_t42 is None:
-        ultima_resposta_t42 = []
 
     t42_updated = False
     stc_updated = False
@@ -351,24 +351,6 @@ def get_devices_data(request):
     else:
         print("⏳ API STC chamada recentemente. Retornando últimos dados armazenados do cache.")
         ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
-
-    # Se não atualizou, usa o último cache
-    if not ultima_resposta_t42:
-        print("⚠️ Usando último cache T42!")
-        ultima_resposta_t42 = getattr(get_devices_data, '_ultima_resposta_t42_cache', [])
-    else:
-        get_devices_data._ultima_resposta_t42_cache = ultima_resposta_t42
-
-    # Se não atualizou STC, usa o último cache
-    if not stc_updated and ultima_resposta_stc is None:
-        print("⚠️ Nenhum dado STC válido encontrado. Usando último cache STC ou lista vazia.")
-        ultima_resposta_stc = getattr(get_devices_data, '_ultima_resposta_stc_cache', [])
-    elif stc_updated:
-        get_devices_data._ultima_resposta_stc_cache = ultima_resposta_stc
-    
-    if ultima_resposta_stc is None:
-        ultima_resposta_stc = [] # Garante que seja uma lista se ainda for None
-    
 
     # Buscar dados da Trafegus (mantido como estava)
     trafegus_vehicles = fetch_trafegus_vehicles()
