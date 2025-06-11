@@ -639,7 +639,6 @@ def get_rota_latlng(viagem):
 #==============
 def check_vehicle_geofence(vehicle_data, geofences):
     # Função para verificar e notificar se um veículo entrou/saiu de uma cerca
-    #==============
     if not vehicle_data.get('latitude') or not vehicle_data.get('longitude'):
         return
 
@@ -660,26 +659,16 @@ def check_vehicle_geofence(vehicle_data, geofences):
     # Obtém o último estado do veículo do cache
     last_state = veiculos_cache.get(vehicle_id, {})
     last_geofence = last_state.get('geofence')
-    last_update = last_state.get('last_update', datetime.min)
 
     # Verifica se deve emitir um novo alerta
-    should_notify = False
-    
     # Caso 1: Entrou em uma nova cerca
     if current_geofence and last_geofence != current_geofence:
-        should_notify = True
+        notify_geofence_event(vehicle_data, current_geofence)
+        vehicle_data['current_geofence'] = current_geofence
     # Caso 2: Saiu de uma cerca
     elif last_geofence and not current_geofence:
         notify_geofence_exit_event(vehicle_data, last_geofence)
         vehicle_data['current_geofence'] = None
-    # Caso 3: Continua na mesma cerca, mas passou tempo suficiente para um novo alerta
-    elif current_geofence and (datetime.now() - last_update).total_seconds() >= 300:  # 5 minutos
-        should_notify = True
-
-    # Emite o alerta se necessário
-    if should_notify:
-        notify_geofence_event(vehicle_data, current_geofence)
-        vehicle_data['current_geofence'] = current_geofence
 
     # Atualiza o cache
     veiculos_cache[vehicle_id] = {
