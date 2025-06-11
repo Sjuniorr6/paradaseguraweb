@@ -209,7 +209,7 @@
 document.addEventListener('DOMContentLoaded', function() {
   // Configuração do WebSocket (sem alterações)
   const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
-  const ws_path = ws_scheme + '://' + window.location.host + '/ws/notifications/';
+  const ws_path = ws_scheme + '://' + window.location.host + '/notifications/';
   const socket = new WebSocket(ws_path);
 
   socket.onmessage = function(e) {
@@ -398,30 +398,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Veículos Trafegus
-        if (data.trafegus_devices) {
-          data.trafegus_devices.forEach(device => {
+        if (data.trafegus_vehicles) {
+          data.trafegus_vehicles.forEach(device => {
             if (!device.latitude || !device.longitude) return;
             var lat = parseFloat(device.latitude);
             var lng = parseFloat(device.longitude);
             if (isNaN(lat) || isNaN(lng)) return;
 
             var marker = L.marker([lat, lng], {icon: stcVeiculoIcon}).addTo(markersLayer);
-            var detalhes = device.detalhes || {};
             var popupContent = `
               <b>Veículo Trafegus</b><br>
-              Placa: ${detalhes.placa || 'N/A'}<br>
-              ${(detalhes.placaCarreta ? `Placa Carreta: ${detalhes.placaCarreta}<br>` : '')}
-              Motorista: ${detalhes.motorista || 'N/A'}<br>
-              Status: ${detalhes.statusCarga || 'N/A'}<br>
-              Local: ${detalhes.descricaoLocal || 'N/A'}<br>
-              Última Atualização: ${detalhes.dataPosicao || 'N/A'}<br>
-              <b>Empresa:</b> ${detalhes.empresa || 'N/A'}<br>
+              Placa: ${device.placa || 'N/A'}<br>
+              ${(device.placaCarreta ? `Placa Carreta: ${device.placaCarreta}<br>` : '')}
+              Motorista: ${device.motorista || 'N/A'}<br>
+              Status: ${device.statusCarga || 'N/A'}<br>
+              Local: ${device.descricaoLocal || 'N/A'}<br>
+              Última Atualização: ${device.dataPosicao || 'N/A'}<br>
+              <b>Empresa:</b> ${device.empresa || 'N/A'}<br>
             `;
-            if (detalhes.contatoMotorista && detalhes.contatoMotorista.length > 0) {
-              popupContent += '<br><b>Contatos:</b><br>' + detalhes.contatoMotorista.map(contato => `${contato.texto}: ${contato.telefone}`).join('<br>');
+            if (device.contatoMotorista && device.contatoMotorista.length > 0) {
+              popupContent += '<br><b>Contatos:</b><br>' + device.contatoMotorista.map(contato => `${contato.texto}: ${contato.telefone}`).join('<br>');
             }
-            if (detalhes.notasFiscais && detalhes.notasFiscais.length > 0) {
-              popupContent += '<br><b>Notas Fiscais:</b><br>' + detalhes.notasFiscais.map(nota => nota.numero).join('<br>');
+            if (device.notasFiscais && device.notasFiscais.length > 0) {
+              popupContent += '<br><b>Notas Fiscais:</b><br>' + device.notasFiscais.map(nota => nota.numero).join('<br>');
             }
             marker.bindPopup(popupContent);
           });
