@@ -494,7 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Veículos Trafegus
-        if (data.trafegus_devices) {
+         if (data.trafegus_devices) {
           data.trafegus_devices.forEach(device => {
             if (!device.latitude || !device.longitude) return;
             var lat = parseFloat(device.latitude);

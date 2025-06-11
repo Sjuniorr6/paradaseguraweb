@@ -560,55 +560,60 @@ def ultima_posicao_veiculos(request):
 
 #==============
 def trafegus_veiculos(request):
-    # View para puxar e processar dados da Trafegus (endpoint público fornecido)
-    #==============
     """
     View para puxar dados da Trafegus (endpoint público fornecido)
     """
     documentos = ["61064929000179", "24315867000102"]
     auth = ("WS_GOLDENSAT", "OVERHAUL.2025")
-    
-    processed_data = {
-        "viagens": []
-    }
+    processed_data = {"viagens": []}
 
     for documento in documentos:
         url = f"https://trafegus.over-haul.com/ws_rest/public/api/ultima-posicao-viagem?Documento={documento}"
-        
         try:
             response = requests.get(url, auth=auth, timeout=30)
             response.raise_for_status()
             data = response.json()
-            
-            # Processa os dados para extrair informações relevantes
+
             for viagem in data.get("viagem", []):
                 posicao = viagem.get("posicoesViagem", {})
-                if not posicao:
-                    continue
-                    
-                # Extrai coordenadas da string
+
+                # DEBUG para ver o que chega
+                # print("VIAGEM:", json.dumps(viagem, indent=2, ensure_ascii=False))
+                # print("POSICAO:", json.dumps(posicao, indent=2, ensure_ascii=False))
+
                 coordenada = posicao.get("coordenada", "")
                 lat, lng = None, None
                 if coordenada:
                     try:
-                        lat, lng = map(float, coordenada.split(","))
+                        lat, lng = map(float, coordenada.replace(" ", "").split(","))
                     except (ValueError, AttributeError):
                         continue
-                
+
                 if lat is None or lng is None:
                     continue
-                    
-                status_carga = posicao.get("statusCarga", "").upper()
-                if any(status in status_carga for status in ['FINISH', 'FINALIZADO', 'CONCLUIDO', 'ENTREGUE']):
-                    continue  # pula veículos finalizados
-                
+
+                status_carga = (
+                    posicao.get("statusCarga") or
+                    viagem.get("statusCarga") or
+                    "N/A"
+                )
+                placa = (
+                    posicao.get("placa") or
+                    viagem.get("placa") or
+                    "N/A"
+                )
+
+                # Se está finalizado, pula
+                if any(status in str(status_carga).upper() for status in ['FINISH', 'FINALIZADO', 'CONCLUIDO', 'ENTREGUE']):
+                    continue
+
                 processed_viagem = {
-                    "placa": posicao.get("placa"),
-                    "placaCarreta": posicao.get("placaCarreta"),
-                    "motorista": posicao.get("motorista"),
-                    "statusCarga": posicao.get("statusCarga"),
-                    "descricaoLocal": posicao.get("descricaoLocal"),
-                    "dataPosicao": posicao.get("dataPosicao"),
+                    "placa": placa,
+                    "placaCarreta": posicao.get("placaCarreta") or "N/A",
+                    "motorista": posicao.get("motorista") or "N/A",
+                    "statusCarga": status_carga,
+                    "descricaoLocal": posicao.get("descricaoLocal") or "N/A",
+                    "dataPosicao": posicao.get("dataPosicao") or "N/A",
                     "latitude": lat,
                     "longitude": lng,
                     "contatoMotorista": posicao.get("contatoMotorista", []),
@@ -616,13 +621,13 @@ def trafegus_veiculos(request):
                     "documento": documento,
                     "empresa": posicao.get("empresa", "N/A")
                 }
-                
+
                 processed_data["viagens"].append(processed_viagem)
-                
+
         except requests.RequestException as e:
             print(f"Erro ao buscar dados para documento {documento}: {str(e)}")
             continue
-    
+
     return JsonResponse(processed_data, safe=False)
 
 
