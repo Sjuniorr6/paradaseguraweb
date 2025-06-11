@@ -253,7 +253,7 @@ def notify_geofence_event(vehicle_data, geofence_name):
                 "id": alert_id,
                 "type": "geofence",
                 "title": "Veículo dentro da cerca",
-                "text": f"Veículo {placa} - Motorista: {motorista} está dentro da cerca {geofence_name}",
+                "text": f"Veículo {placa} - Motorista: {motorista} - Status: {status} está dentro da cerca {geofence_name}",
                 "vehicle": vehicle_data,
                 "image": image_url,
                 "geofence_type": "Primario" if "Primario" in geofence_name else "Secundario",
@@ -290,6 +290,15 @@ def notify_geofence_exit_event(vehicle_data, geofence_name):
             'N/A'
         )
         
+        # Busca status corretamente
+        status = (
+            vehicle_data.get('statusCarga') or
+            vehicle_data.get('status') or
+            (vehicle_data.get('detalhes', {}).get('statusCarga') if vehicle_data.get('detalhes') else None) or
+            (vehicle_data.get('detalhes', {}).get('status') if vehicle_data.get('detalhes') else None) or
+            'N/A'
+        )
+        
         async_to_sync(channel_layer.group_send)(
             "notifications",
             {
@@ -298,7 +307,7 @@ def notify_geofence_exit_event(vehicle_data, geofence_name):
                     "id": alert_id,
                     "type": "geofence_exit",
                     "title": "Veículo saiu da cerca",
-                    "text": f"Veículo {vehicle_data.get('placa', 'N/A')} - Motorista: {motorista} saiu da cerca {geofence_name}",
+                    "text": f"Veículo {vehicle_data.get('placa', 'N/A')} - Motorista: {motorista} - Status: {status} saiu da cerca {geofence_name}",
                     "vehicle": vehicle_data,
                     "image": image_url,
                     "geofence_type": "Saida",
@@ -434,19 +443,81 @@ def get_devices_data(request):
 
     # Verifica geofences para cada dispositivo
     for device in all_devices:
+        # Inicializa campos com valores padrão
+        vehicle_placa = 'N/A'
+        vehicle_motorista = 'N/A'
+        vehicle_status_carga = 'N/A'
+        vehicle_descricao_local = 'N/A'
+        vehicle_data_posicao = 'N/A'
+
+        # Extração comum para todos os tipos (tentando as chaves mais prováveis)
+        vehicle_type = device.get('type')
+        vehicle_latitude = device.get('latitude')
+        vehicle_longitude = device.get('longitude')
+
+        # Tenta extrair a placa
+        if device.get('placa'):
+            vehicle_placa = device.get('placa')
+        elif device.get('plate'):
+            vehicle_placa = device.get('plate')
+        elif device.get('ident'): # Comum em T42
+            vehicle_placa = device.get('ident')
+        elif device.get('unit_id'): # Comum em T42
+            vehicle_placa = device.get('unit_id')
+
+        # Tenta extrair motorista e statusCarga
+        if device.get('motorista'):
+            vehicle_motorista = device.get('motorista')
+        if device.get('statusCarga'):
+            vehicle_status_carga = device.get('statusCarga')
+        elif device.get('status'):
+            vehicle_status_carga = device.get('status')
+
+        # Tenta extrair descricaoLocal e dataPosicao
+        if device.get('descricaoLocal'):
+            vehicle_descricao_local = device.get('descricaoLocal')
+        elif device.get('endereco'):
+            vehicle_descricao_local = device.get('endereco')
+        
+        if device.get('dataPosicao'):
+            vehicle_data_posicao = device.get('dataPosicao')
+        elif device.get('datetime_utc'):
+            vehicle_data_posicao = device.get('datetime_utc')
+
+        # Se houver um dicionário 'posicoesViagem' (comum em dados Trafegus antes do processamento)
+        # ou 'detalhes' (comum em outras APIs ou dados aninhados), tentar extrair de lá também
+        nested_data = device.get('posicoesViagem', device.get('detalhes', {}))
+        if nested_data:
+            vehicle_placa = vehicle_placa if vehicle_placa != 'N/A' else nested_data.get('placa') or nested_data.get('plate') or nested_data.get('ident') or nested_data.get('unit_id') or 'N/A'
+            vehicle_motorista = vehicle_motorista if vehicle_motorista != 'N/A' else nested_data.get('motorista') or 'N/A'
+            vehicle_status_carga = vehicle_status_carga if vehicle_status_carga != 'N/A' else nested_data.get('statusCarga') or nested_data.get('status') or 'N/A'
+            vehicle_descricao_local = vehicle_descricao_local if vehicle_descricao_local != 'N/A' else nested_data.get('descricaoLocal') or nested_data.get('endereco') or 'N/A'
+            vehicle_data_posicao = vehicle_data_posicao if vehicle_data_posicao != 'N/A' else nested_data.get('dataPosicao') or nested_data.get('datetime_utc') or 'N/A'
+            
+            # Atualiza lat/lon se vierem aninhados (ex: Trafegus 'coordenada')
+            if (vehicle_latitude is None or vehicle_longitude is None) and nested_data.get('coordenada'):
+                try:
+                    lat, lng = map(float, nested_data['coordenada'].split(','))
+                    vehicle_latitude = lat
+                    vehicle_longitude = lng
+                except (ValueError, AttributeError):
+                    pass
+
         processed_device = {
-            'type': device.get('type'),
-            'latitude': device.get('latitude'),
-            'longitude': device.get('longitude'),
-            'placa': device.get('plate') or device.get('placa'),
-            'statusCarga': device.get('statusCarga') or device.get('status'),
-            'detalhes': device.get('detalhes', {})
+            'type': vehicle_type,
+            'latitude': vehicle_latitude,
+            'longitude': vehicle_longitude,
+            'placa': vehicle_placa,
+            'statusCarga': vehicle_status_carga,
+            'motorista': vehicle_motorista,
+            'descricaoLocal': vehicle_descricao_local,
+            'dataPosicao': vehicle_data_posicao,
+            'original_data': device # Manter dados originais para debug ou outras necessidades
         }
 
-        if device.get('type') == 'Trafegus':
-            processed_device['motorista'] = device.get('motorista')
-            processed_device['descricaoLocal'] = device.get('endereco')
-            processed_device['dataPosicao'] = device.get('datetime_utc')
+        if processed_device['latitude'] is None or processed_device['longitude'] is None:
+            print(f"⚠️ Dispositivo {processed_device.get('placa', 'N/A')} sem coordenadas válidas. Pulando checagem de geofence.")
+            continue # Pula se não tiver lat/lon válidos
 
         check_vehicle_geofence(processed_device, geofences)
 
@@ -548,7 +619,6 @@ def ultima_posicao_veiculos(request):
         "veiculos_em_cercas": len(veiculos_em_cercas)
     }
     return render(request, "ultima_posicoes.html", context)
-
 
 
 
