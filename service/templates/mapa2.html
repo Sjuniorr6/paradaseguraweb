@@ -236,8 +236,6 @@ document.addEventListener('DOMContentLoaded', function() {
       notificationsPanel.style.display = 'block';
       badge.style.display = 'none';
       alertCount = 0;
-    } else {
-      notificationsPanel.style.display = 'none';
     }
   };
 
@@ -245,6 +243,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const notificationDiv = document.createElement('div');
     notificationDiv.classList.add('notification-item');
     notificationDiv.classList.add(message.geofence_type === 'Primario' ? 'primary' : 'secondary');
+
+    // Adiciona evento de clique para fechar o alerta ao clicar em qualquer lugar dele
+    notificationDiv.onclick = function() {
+      closeAlert(message.id, notificationDiv);
+    };
 
     // Botão de fechar
     const closeBtn = document.createElement('button');
