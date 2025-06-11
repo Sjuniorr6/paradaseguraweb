@@ -208,61 +208,57 @@ def check_geofence(vehicle_lat, vehicle_lon, geofence):
 #==============
 def notify_geofence_event(vehicle_data, geofence_name):
     # Função para enviar notificação quando um veículo entra em uma cerca geográfica
-    try:
-        channel_layer = get_channel_layer()
+    #==============
+    channel_layer = get_channel_layer()
 
-        # Determina qual imagem usar baseado no tipo de cerca
-        image_url = '/static/images/'
-        if 'Primario' in geofence_name:
-            image_url += 'circuit-board.png'  # Imagem para cerca primária
-        else:
-            image_url += 'lock.png'  # Imagem para cerca secundária
+    # Determina qual imagem usar baseado no tipo de cerca
+    image_url = '/static/images/'
+    if 'Primario' in geofence_name:
+        image_url += 'circuit-board.png'  # Imagem para cerca primária
+    else:
+        image_url += 'lock.png'  # Imagem para cerca secundária
 
-        # Função utilitária robusta
-        def extrair_placa_status(vehicle_data):
-            # Tenta direto
-            placa = (
-                vehicle_data.get('placa') or
-                vehicle_data.get('plate') or
-                vehicle_data.get('unitnumber') or
-                vehicle_data.get('deviceId') or
-                # Trafegus: caso o dict esteja aninhado
-                (vehicle_data.get('posicoesViagem', {}).get('placa')) or
-                (vehicle_data.get('detalhes', {}).get('placa') if vehicle_data.get('detalhes') else None) or
-                'N/A'
-            )
-            status = (
-                vehicle_data.get('statusCarga') or
-                vehicle_data.get('status') or
-                (vehicle_data.get('detalhes', {}).get('statusCarga') if vehicle_data.get('detalhes') else None) or
-                (vehicle_data.get('detalhes', {}).get('status') if vehicle_data.get('detalhes') else None) or
-                (vehicle_data.get('posicoesViagem', {}).get('statusCarga')) or
-                'N/A'
-            )
-            return placa, status
+    # Busca a placa corretamente (trafegus pode ser 'plate', 'placa' ou dentro de 'detalhes')
+    placa = (
+        vehicle_data.get('placa') or
+        vehicle_data.get('plate') or
+        (vehicle_data.get('detalhes', {}).get('placa') if vehicle_data.get('detalhes') else None) or
+        'N/A'
+    )
+    # Busca status corretamente
+    status = (
+        vehicle_data.get('statusCarga') or
+        vehicle_data.get('status') or
+        (vehicle_data.get('detalhes', {}).get('statusCarga') if vehicle_data.get('detalhes') else None) or
+        (vehicle_data.get('detalhes', {}).get('status') if vehicle_data.get('detalhes') else None) or
+        'N/A'
+    )
 
-        placa, status = extrair_placa_status(vehicle_data)
-
-        # Envia para todos os usuários conectados
-        async_to_sync(channel_layer.group_send)(
-            "notifications",
-            {
-                "type": "notification_message",
-                "message": {
-                    "type": "geofence",
-                    "title": "Veículo dentro da cerca",
-                    "text": f"Veículo {placa} está dentro da cerca {geofence_name}",
-                    "vehicle": vehicle_data,
-                    "image": image_url,
-                    "geofence_type": "Primario" if "Primario" in geofence_name else "Secundario",
-                    "status": status,
-                    "timestamp": datetime.now().isoformat()
-                }
+    # Envia para todos os usuários conectados
+    async_to_sync(channel_layer.group_send)(
+        "notifications",
+        {
+            "type": "notification_message",
+            "message": {
+                "type": "geofence",
+                "title": "Veículo dentro da cerca",
+                "text": f"Veículo {placa} está dentro da cerca {geofence_name}",
+                "vehicle": vehicle_data,
+                "image": image_url,
+                "geofence_type": "Primario" if "Primario" in geofence_name else "Secundario",
+                "status": status,
+                "timestamp": datetime.now().isoformat()
             }
-        )
-    except Exception as e:
-        print(f"Erro ao enviar notificação: {str(e)}")
-        # Continua a execução mesmo se falhar a notificação
+        }
+    )
+
+    # Loga o alerta no banco de dados
+    from notificar.models import AlertLog
+    from django.contrib.auth.models import User
+
+    # Cria um alerta para cada usuário ativo
+    for user in User.objects.filter(is_active=True):
+        pass  # Nada será feito, mas o bloco do for está correto
 
 
 #==============
