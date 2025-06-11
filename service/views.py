@@ -13,6 +13,8 @@ from pparada.models import paradasegura
 from datetime import datetime, timedelta
 import os
 from service.models import Geofence, UserGeofence
+import time
+import threading
 
 # Create your views here.
 T42_API_URL = "https://mongol.brono.com/mongol/api.php"
@@ -38,28 +40,37 @@ class CachePersistente:
         self._t42_cache = []
         self._ultima_atualizacao_stc = 0
         self._ultima_atualizacao_t42 = 0
+        self._lock = threading.Lock()  # Adiciona lock para thread safety
 
     def atualizar_stc(self, dados):
         if dados:
-            self._stc_cache = dados
-            self._ultima_atualizacao_stc = time.time()
+            with self._lock:
+                self._stc_cache = dados
+                self._ultima_atualizacao_stc = time.time()
+                print(f"Cache STC atualizado com {len(dados)} dispositivos")
 
     def atualizar_t42(self, dados):
         if dados:
-            self._t42_cache = dados
-            self._ultima_atualizacao_t42 = time.time()
+            with self._lock:
+                self._t42_cache = dados
+                self._ultima_atualizacao_t42 = time.time()
+                print(f"Cache T42 atualizado com {len(dados)} dispositivos")
 
     def obter_stc(self):
-        return self._stc_cache
+        with self._lock:
+            return self._stc_cache.copy()  # Retorna uma cópia para evitar modificações acidentais
 
     def obter_t42(self):
-        return self._t42_cache
+        with self._lock:
+            return self._t42_cache.copy()  # Retorna uma cópia para evitar modificações acidentais
 
     def tempo_desde_atualizacao_stc(self):
-        return time.time() - self._ultima_atualizacao_stc
+        with self._lock:
+            return time.time() - self._ultima_atualizacao_stc
 
     def tempo_desde_atualizacao_t42(self):
-        return time.time() - self._ultima_atualizacao_t42
+        with self._lock:
+            return time.time() - self._ultima_atualizacao_t42
 
 # Instância global do cache persistente
 cache_persistente = CachePersistente()
@@ -278,6 +289,8 @@ def get_devices_data(request):
     ultima_resposta_stc = cache_persistente.obter_stc()
     ultima_resposta_t42 = cache_persistente.obter_t42()
 
+    print(f"Cache inicial - STC: {len(ultima_resposta_stc)} dispositivos, T42: {len(ultima_resposta_t42)} dispositivos")
+
     t42_updated = False
     stc_updated = False
 
@@ -312,28 +325,32 @@ def get_devices_data(request):
                         processed_t42_data = []
                         for device in t42_data:
                             if isinstance(device, dict):
-                                processed_device = {
-                                    'type': 'T42',
-                                    'latitude': float(device.get('latitude', 0)),
-                                    'longitude': float(device.get('longitude', 0)),
-                                    'plate': device.get('plate', 'N/A'),
-                                    'speed': float(device.get('speed', 0)),
-                                    'direction': float(device.get('direction', 0)),
-                                    'ignition': device.get('ignition', 'OFF') == 'ON',
-                                    'last_update': device.get('last_update', ''),
-                                    'unitnumber': device.get('unitnumber', ''),
-                                    'status': device.get('status', ''),
-                                    'address': device.get('address', ''),
-                                    'battery': device.get('battery', ''),
-                                    'temperature': device.get('temp1', '')
-                                }
-                                processed_t42_data.append(processed_device)
+                                try:
+                                    processed_device = {
+                                        'type': 'T42',
+                                        'latitude': float(device.get('latitude', 0)),
+                                        'longitude': float(device.get('longitude', 0)),
+                                        'plate': device.get('plate', 'N/A'),
+                                        'speed': float(device.get('speed', 0)),
+                                        'direction': float(device.get('direction', 0)),
+                                        'ignition': device.get('ignition', 'OFF') == 'ON',
+                                        'last_update': device.get('last_update', ''),
+                                        'unitnumber': device.get('unitnumber', ''),
+                                        'status': device.get('status', ''),
+                                        'address': device.get('address', ''),
+                                        'battery': device.get('battery', ''),
+                                        'temperature': device.get('temp1', '')
+                                    }
+                                    processed_t42_data.append(processed_device)
+                                except (ValueError, TypeError) as e:
+                                    print(f"Erro ao processar dispositivo T42: {e}")
+                                    continue
                         
-                        # Atualiza o cache persistente com os novos dados
-                        cache_persistente.atualizar_t42(processed_t42_data)
-                        ultima_resposta_t42 = processed_t42_data
-                        t42_updated = True
-                        print(f"✅ API T42 atualizada com {len(processed_t42_data)} dispositivos.")
+                        if processed_t42_data:  # Só atualiza se houver dados processados
+                            cache_persistente.atualizar_t42(processed_t42_data)
+                            ultima_resposta_t42 = processed_t42_data
+                            t42_updated = True
+                            print(f"✅ API T42 atualizada com {len(processed_t42_data)} dispositivos.")
                 except json.JSONDecodeError as e:
                     print(f"⚠️ Erro ao decodificar resposta T42: {str(e)}")
         except requests.RequestException as e:
@@ -357,34 +374,44 @@ def get_devices_data(request):
                         processed_stc_data = []
                         for device in stc_data["data"]:
                             if isinstance(device, dict):
-                                processed_device = {
-                                    'type': 'STC',
-                                    'latitude': float(device.get('latitude', 0)),
-                                    'longitude': float(device.get('longitude', 0)),
-                                    'plate': device.get('plate', 'N/A'),
-                                    'speed': float(device.get('speed', 0)),
-                                    'direction': float(device.get('direction', 0)),
-                                    'ignition': device.get('ignition', 'OFF') == 'ON',
-                                    'last_update': device.get('date', ''),
-                                    'address': device.get('address', ''),
-                                    'battery': device.get('batteryPercentual', ''),
-                                    'temperature': device.get('temp1', ''),
-                                    'gps_fix': device.get('gpsFix', '0') == '1',
-                                    'origin_position': device.get('originPosition', '')
-                                }
-                                processed_stc_data.append(processed_device)
+                                try:
+                                    processed_device = {
+                                        'type': 'STC',
+                                        'latitude': float(device.get('latitude', 0)),
+                                        'longitude': float(device.get('longitude', 0)),
+                                        'plate': device.get('plate', 'N/A'),
+                                        'speed': float(device.get('speed', 0)),
+                                        'direction': float(device.get('direction', 0)),
+                                        'ignition': device.get('ignition', 'OFF') == 'ON',
+                                        'last_update': device.get('date', ''),
+                                        'address': device.get('address', ''),
+                                        'battery': device.get('batteryPercentual', ''),
+                                        'temperature': device.get('temp1', ''),
+                                        'gps_fix': device.get('gpsFix', '0') == '1',
+                                        'origin_position': device.get('originPosition', '')
+                                    }
+                                    processed_stc_data.append(processed_device)
+                                except (ValueError, TypeError) as e:
+                                    print(f"Erro ao processar dispositivo STC: {e}")
+                                    continue
                         
-                        # Atualiza o cache persistente com os novos dados
-                        cache_persistente.atualizar_stc(processed_stc_data)
-                        ultima_resposta_stc = processed_stc_data
-                        stc_updated = True
-                        print("✅ API STC atualizada com novos dados.")
+                        if processed_stc_data:  # Só atualiza se houver dados processados
+                            cache_persistente.atualizar_stc(processed_stc_data)
+                            ultima_resposta_stc = processed_stc_data
+                            stc_updated = True
+                            print("✅ API STC atualizada com novos dados.")
                     else:
                         print(f"⚠️ API STC retornou resposta inválida: {stc_data}")
                 except json.JSONDecodeError as e:
                     print(f"⚠️ Erro ao decodificar resposta STC: {str(e)}")
         except requests.RequestException as e:
             print(f"⚠️ Erro na requisição STC: {str(e)}")
+
+    # Se não houve atualização, usa os dados do cache
+    if not t42_updated:
+        ultima_resposta_t42 = cache_persistente.obter_t42()
+    if not stc_updated:
+        ultima_resposta_stc = cache_persistente.obter_stc()
 
     # Busca dados da Trafegus
     trafegus_vehicles = fetch_trafegus_vehicles()
