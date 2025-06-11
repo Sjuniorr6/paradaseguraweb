@@ -130,19 +130,23 @@ def fetch_trafegus_vehicles():
                 if any(status in status_carga.upper() for status in ['FINISH', 'FINALIZADO', 'CONCLUIDO', 'ENTREGUE']):
                     continue  # pula veículos finalizados
                 
+                # Adiciona type e detalhes para trafegus_vehicles
                 processed_viagem = {
-                    "placa": placa,
-                    "placaCarreta": posicao.get("placaCarreta") or "N/A",
-                    "motorista": motorista,
-                    "statusCarga": status_carga,
-                    "descricaoLocal": posicao.get("descricaoLocal") or "N/A",
-                    "dataPosicao": posicao.get("dataPosicao") or "N/A",
+                    "type": "Trafegus", # Adiciona o tipo do veículo
                     "latitude": lat,
                     "longitude": lng,
-                    "contatoMotorista": posicao.get("contatoMotorista", []),
-                    "notasFiscais": posicao.get("notasFiscais", []),
-                    "documento": documento,
-                    "empresa": posicao.get("empresa", "N/A")
+                    "detalhes": { # Agrupa os detalhes aqui
+                        "placa": placa,
+                        "placaCarreta": posicao.get("placaCarreta") or "N/A",
+                        "motorista": motorista,
+                        "statusCarga": status_carga,
+                        "descricaoLocal": posicao.get("descricaoLocal") or "N/A",
+                        "dataPosicao": posicao.get("dataPosicao") or "N/A",
+                        "contatoMotorista": posicao.get("contatoMotorista", []),
+                        "notasFiscais": posicao.get("notasFiscais", []),
+                        "documento": documento,
+                        "empresa": posicao.get("empresa", "N/A")
+                    }
                 }
                 
                 processed_data.append(processed_viagem)
