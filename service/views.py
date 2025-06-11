@@ -223,10 +223,8 @@ def check_geofence(vehicle_lat, vehicle_lon, geofence):
 #==============
 def notify_geofence_event(vehicle_data, geofence_name):
     # Função para enviar notificação quando um veículo entra em uma cerca geográfica
+    #==============
     channel_layer = get_channel_layer()
-
-    # Gera um ID único para o alerta
-    alert_id = f"alert_{int(time.time())}_{vehicle_data.get('placa', '')}"
 
     # Determina qual imagem usar baseado no tipo de cerca
     image_url = '/static/images/'
@@ -235,10 +233,21 @@ def notify_geofence_event(vehicle_data, geofence_name):
     else:
         image_url += 'lock.png'  # Imagem para cerca secundária
 
-    # Busca a placa, motorista e status diretamente do vehicle_data padronizado
-    placa = vehicle_data.get('placa', 'N/A')
-    motorista = vehicle_data.get('motorista', 'N/A')
-    status = vehicle_data.get('statusCarga', 'N/A')
+    # Busca a placa corretamente (trafegus pode ser 'plate', 'placa' ou dentro de 'detalhes')
+    placa = (
+        vehicle_data.get('placa') or
+        vehicle_data.get('plate') or
+        (vehicle_data.get('detalhes', {}).get('placa') if vehicle_data.get('detalhes') else None) or
+        'N/A'
+    )
+    # Busca status corretamente
+    status = (
+        vehicle_data.get('statusCarga') or
+        vehicle_data.get('status') or
+        (vehicle_data.get('detalhes', {}).get('statusCarga') if vehicle_data.get('detalhes') else None) or
+        (vehicle_data.get('detalhes', {}).get('status') if vehicle_data.get('detalhes') else None) or
+        'N/A'
+    )
 
     # Envia para todos os usuários conectados
     async_to_sync(channel_layer.group_send)(
@@ -246,15 +255,13 @@ def notify_geofence_event(vehicle_data, geofence_name):
         {
             "type": "notification_message",
             "message": {
-                "id": alert_id,
                 "type": "geofence",
                 "title": "Veículo dentro da cerca",
-                "text": f"Veículo {placa} - Motorista: {motorista} - Status: {status} está dentro da cerca {geofence_name}",
+                "text": f"Veículo {placa} está dentro da cerca {geofence_name}",
                 "vehicle": vehicle_data,
                 "image": image_url,
                 "geofence_type": "Primario" if "Primario" in geofence_name else "Secundario",
                 "status": status,
-                "motorista": motorista,
                 "timestamp": datetime.now().isoformat()
             }
         }
@@ -268,43 +275,29 @@ def notify_geofence_event(vehicle_data, geofence_name):
     for user in User.objects.filter(is_active=True):
         pass  # Nada será feito, mas o bloco do for está correto
 
-
 #==============
 def notify_geofence_exit_event(vehicle_data, geofence_name):
     # Função para enviar notificação quando um veículo sai de uma cerca geográfica
-    try:
-        channel_layer = get_channel_layer()
-        image_url = '/static/images/lock.png'  # Pode customizar se quiser
-        
-        # Gera um ID único para o alerta
-        alert_id = f"alert_{int(time.time())}_{vehicle_data.get('placa', '')}"
-        
-        # Busca a placa, motorista e status diretamente do vehicle_data padronizado
-        placa = vehicle_data.get('placa', 'N/A')
-        motorista = vehicle_data.get('motorista', 'N/A')
-        status = vehicle_data.get('statusCarga', 'N/A')
-
-        async_to_sync(channel_layer.group_send)(
-            "notifications",
-            {
-                "type": "notification_message",
-                "message": {
-                    "id": alert_id,
-                    "type": "geofence_exit",
-                    "title": "Veículo saiu da cerca",
-                    "text": f"Veículo {placa} - Motorista: {motorista} - Status: {status} saiu da cerca {geofence_name}",
-                    "vehicle": vehicle_data,
-                    "image": image_url,
-                    "geofence_type": "Saida",
-                    "status": status,
-                    "motorista": motorista,
-                    "timestamp": datetime.now().isoformat()
-                }
+    #==============
+    channel_layer = get_channel_layer()
+    image_url = '/static/images/lock.png'  # Pode customizar se quiser
+    async_to_sync(channel_layer.group_send)(
+        "notifications",
+        {
+            "type": "notification_message",
+            "message": {
+                "type": "geofence_exit",
+                "title": "Veículo saiu da cerca",
+                "text": f"Veículo {vehicle_data.get('placa', 'N/A')} saiu da cerca {geofence_name}",
+                "vehicle": vehicle_data,
+                "image": image_url,
+                "geofence_type": "Saida",
+                "status": vehicle_data.get('statusCarga', 'N/A'),
+                "timestamp": datetime.now().isoformat()
             }
-        )
-    except Exception as e:
-        print(f"Erro ao enviar notificação de saída: {str(e)}")
-        # Continua a execução mesmo se falhar a notificação
+        }
+    )
+
 
 def remove_alert(request):
     # Função para remover um alerta quando ele for fechado
