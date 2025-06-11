@@ -58,7 +58,10 @@ INSTALLED_APPS = [
 ASGI_APPLICATION = 'web.asgi.application'
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer",
+        "BACKEND": "channels_redis.pubsub.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)], # Ajuste o IP e a porta se o Redis não estiver no localhost ou na porta 6379
+        },
     },
 }
 
