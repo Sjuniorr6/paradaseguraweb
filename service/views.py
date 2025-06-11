@@ -459,7 +459,7 @@ def get_devices_data(request):
     return JsonResponse({
         "t42_devices": ultima_resposta_t42,
         "stc_devices": ultima_resposta_stc,
-        "trafegus_vehicles": trafegus_vehicles,
+        "trafegus_devices": trafegus_vehicles,
         "all_devices": all_devices,
         "geofences": geofences
     })
