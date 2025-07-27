@@ -44,3 +44,11 @@ env/
 # OS
 .DS_Store
 Thumbs.db 
+
+# Ignore large GIF files added to the repository
+# These files caused push errors due to GitHub's 100 MB size limit. By listing
+# them here, Git will stop tracking them in future commits. To remove them
+# entirely from history, consider using `git lfs migrate` or a history rewrite.
+gsautomacao/static/fundo.gif
+static/images/login.gif
+static/images/login1.gif
