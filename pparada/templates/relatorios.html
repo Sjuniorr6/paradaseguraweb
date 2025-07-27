@@ -3,6 +3,143 @@
 
 {% block content %}
 {% include "components/components_sidebar.html" %}
+
+<style>
+body {
+  margin-top: 30px;
+}
+
+/* Container principal */
+.container {
+  background: #ffffff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  padding: 25px;
+  margin-top: 50px !important;
+  max-width: 1500px; /* Limita largura máxima */
+}
+
+/* Título centralizado e destacado */
+h2 {
+  font-weight: 600;
+  color: #34495e;
+  border-bottom: 2px solid #F1C46B;
+  display: inline-block;
+  margin-bottom: 25px !important;
+  padding-bottom: 5px;
+}
+
+/* Formulário de filtros */
+form {
+  gap: 15px;
+  background-color: #f0f4f9;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 15px !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+form .form-control, form select {
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+}
+
+form label {
+  color: #495057;
+  font-weight: 500;
+}
+
+/* Botão buscar */
+form button.btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+  transition: background-color 0.3s ease;
+}
+
+form button.btn-primary:hover {
+  background-color: #0069d9;
+  border-color: #0062cc;
+}
+
+/* Botão Exportar para Excel */
+a.btn-success {
+  background-color: #28a745;
+  border-color: #28a745;
+  transition: all 0.3s ease;
+}
+
+a.btn-success:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
+}
+
+/* Tabela */
+.table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table thead {
+  background-color: #007bff;
+  color: #ffffff;
+}
+
+.table th, .table td {
+  vertical-align: middle;
+  text-align: center;
+}
+
+.table tbody tr:hover {
+  background-color: #f1f9ff;
+}
+
+.table tbody td {
+  color: #555;
+}
+
+/* Paginação estilizada */
+.pagination {
+  margin-top: 25px;
+}
+
+.pagination .page-link {
+  color: #007bff;
+  border-radius: 4px !important;
+  transition: background-color 0.3s ease;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.pagination .page-link:hover {
+  background-color: #0069d9;
+  color: #fff;
+}
+
+/* Responsividade adicional */
+@media (max-width: 768px) {
+  .container {
+    padding: 15px;
+  }
+  form {
+    flex-direction: column;
+  }
+  form > div {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  form button {
+    width: 100%;
+  }
+  .form-row.mt-3 {
+    justify-content: center !important;
+  }
+}
+
+</style>
+
 <div class="container mt-5">
   <h2 class="mb-4 text-center">Consulta Checklist</h2>
   

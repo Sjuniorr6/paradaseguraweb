@@ -1,63 +1,185 @@
-{% extends "base.html" %}
 {% load static %}
 
 {% block content %}
-<div class="container my-5 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-  <div class="card shadow-sm" style="max-width: 400px; width: 100%; background: rgba(0, 0, 0, 0.8);">
-    <div class="card-header text-center" style="background: rgba(0, 0, 0, 0.9); color: #fff;">
-      <h2 class="mb-0">Registrar-se</h2>
-    </div>
-    <div class="card-body" style="color: #fff;">
-      <div class="text-center mb-4">
-        <img src="{% static 'images/backgrownd.png' %}" alt="Imagem de fundo" class="img-fluid" style="max-width: 150px;">
-      </div>
-      
-      {% if form.errors %}
-      <div class="alert alert-danger">
+<style>
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  background: url("{% static 'images/login.gif' %}") no-repeat center center fixed;
+  background-size: cover;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.wrapper {
+  min-height: 100vh;
+  width: 100%;
+  padding: 30px 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 40px 35px;
+  width: 100%;
+  max-width: 460px; /* Aumentado */
+  text-align: center;
+  color: #fff;
+}
+
+.glass-card h2 {
+  margin-bottom: 25px;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.glass-card label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  font-size: 1rem;
+  text-align: left;
+}
+
+.glass-card input,
+.glass-card select {
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.glass-card input:focus,
+.glass-card select:focus {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: #F1C46B;
+  box-shadow: none;
+  outline: none;
+}
+
+.glass-card .btn-primary {
+  background-color: #F1C46B;
+  border: none;
+  font-weight: bold;
+  font-size: 1rem;
+  color: #333;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.glass-card .btn-primary:hover {
+  background-color: #d3a950;
+}
+
+.glass-card .btn-success-custom {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  font-weight: bold;
+  font-size: 1rem;
+  padding: 12px;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.glass-card .btn-success-custom:hover {
+  background-color: #218838;
+  color: white;
+}
+
+.glass-card .alert {
+  background-color: rgba(255, 0, 0, 0.1);
+  border: 1px solid #ff4d4d;
+  color: #ff4d4d;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.glass-card img {
+  max-width: 120px;
+  margin-bottom: 25px;
+}
+
+@media (max-width: 400px) {
+  .glass-card {
+    padding: 30px 20px;
+  }
+}
+</style>
+
+<!-- FORMULÁRIO REGISTRO -->
+<div class="wrapper">
+  <div class="glass-card">
+    <h2>Registrar-se</h2>
+
+    <img src="{% static 'images/backgrownd.png' %}" alt="Logo">
+
+    {% if form.errors %}
+      <div class="alert text-center">
         Por favor, corrija os erros abaixo.
       </div>
-      {% endif %}
-      
-      <form method="post">
-        {% csrf_token %}
-        <!-- Renderização campo a campo para customização -->
-        <div class="mb-3">
-          {{ form.username.label_tag }}
-          {{ form.username }}
-          {% if form.username.errors %}
-          <div class="text-danger">{{ form.username.errors }}</div>
-          {% endif %}
-        </div>
+    {% endif %}
 
-        <!-- Novo campo para selecionar o tipo de usuário -->
-        <div class="mb-3">
-          {{ form.user_type.label_tag }}
-          {{ form.user_type }}
-          {% if form.user_type.errors %}
-          <div class="text-danger">{{ form.user_type.errors }}</div>
-          {% endif %}
-        </div>
-
-        <div class="mb-3">
-          {{ form.password1.label_tag }}
-          {{ form.password1 }}
-          {% if form.password1.errors %}
-          <div class="text-danger">{{ form.password1.errors }}</div>
-          {% endif %}
-        </div>
-        <div class="mb-3">
-          {{ form.password2.label_tag }}
-          {{ form.password2 }}
-          {% if form.password2.errors %}
-          <div class="text-danger">{{ form.password2.errors }}</div>
-          {% endif %}
-        </div>
-        <button type="submit" class="btn btn-primary w-100">Registrar</button>
-      </form>
+    <form method="post">
+      {% csrf_token %}
       
-      <div class="text-center mt-3">
-        <small>Já tem uma conta? <a href="{% url 'login' %}" class="text-decoration-underline text-white">Faça login</a></small>
+      <div class="mb-3 text-start">
+        <label for="{{ form.username.id_for_label }}">Nome de usuário</label>
+        {{ form.username }}
+        {% if form.username.errors %}
+          <div class="text-danger small">{{ form.username.errors }}</div>
+        {% endif %}
       </div>
+
+      <div class="mb-3 text-start">
+        <label for="{{ form.user_type.id_for_label }}">Tipo de usuário</label>
+        {{ form.user_type }}
+        {% if form.user_type.errors %}
+          <div class="text-danger small">{{ form.user_type.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3 text-start">
+        <label for="{{ form.password1.id_for_label }}">Senha</label>
+        {{ form.password1 }}
+        {% if form.password1.errors %}
+          <div class="text-danger small">{{ form.password1.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3 text-start">
+        <label for="{{ form.password2.id_for_label }}">Confirmar senha</label>
+        {{ form.password2 }}
+        {% if form.password2.errors %}
+          <div class="text-danger small">{{ form.password2.errors }}</div>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100">Registrar</button>
+    </form>
+
+    <div class="mt-4">
+      <p class="text-white mb-2">Já tem uma conta?</p>
+      <a href="{% url 'login' %}" class="btn btn-success-custom w-100">Entrar</a>
     </div>
   </div>
 </div>

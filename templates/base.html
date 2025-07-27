@@ -1,3 +1,4 @@
+{% include "components/_header.html" %}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -13,51 +14,89 @@
   {% block extra_css %}{% endblock extra_css %}
 
   <style>
-    /* Ajustes básicos de tela */
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100vh;
-      background-color: #979595;
-      /* Permite rolagem, em vez de bloquear */
-      overflow: auto; 
-    }
+  /* Ajustes básicos da página */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #2c2e3191;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  overflow-y: auto; /* Garante scroll vertical funcional */
+}
 
-    /* Imagem de fundo */
-    body {
-      background-image: url("{% static 'images/backgrownd.png' %}");
-      background-repeat: no-repeat;
-      background-position: center center;
-      background-size: contain; 
-    }
+/* Fundo da página */
+body {
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+}
 
-    /* Ajustes para desktop */
-    @media (min-width: 1024px) {
-      body {
-        background-size: 50%;
-      }
-    }
+/* HEADER / NAVBAR corrigida */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 45px;
+  background: linear-gradient(160deg, #F1C46B, #8F7239);
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  position: fixed;
+  width: 100%; /* Utiliza 100% da largura da tela */
+  left: 0;     /* Começa no extremo esquerdo */
+  top: 0;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  z-index: 1000;
+}
 
-    /* Ajustes para dispositivos móveis */
-    @media (max-width: 768px) {
-      body {
-        background-size: 90%;
-        background-attachment: scroll;
-      }
-    }
+/* Ajuste caso exista sidebar lateral fixa */
+body.has-sidebar .navbar {
+  width: calc(100% - 250px); /* largura da sidebar real */
+  left: 250px;               /* mesma largura da sidebar */
+}
 
-    /* Envolve o conteúdo principal */
-    .content-wrapper {
-      /* Se quiser centralizar verticalmente, pode usar min-height + flex */
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      position: relative;
-       
-    }
+/* Link estilizado (opcional) */
+.gs-link {
+  color: white;
+  font-size: 25px;
+  font-weight: bold;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.gs-link:hover {
+  color: #ffd700;
+}
+
+/* Animação corrigida de scroll (se aplicável) */
+@keyframes scrollText {
+  0% { transform: translateX(0); }
+  10% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+/* RESPONSIVIDADE */
+/* Desktop */
+@media (min-width: 1024px) {
+  body {
+    background-size: 50%;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  body {
+    background-size: 90%;
+    background-attachment: scroll;
+  }
+
+  .navbar {
+    width: 100%;
+    left: 0;
+  }
+}
+
   </style>
 </head>
 <body>

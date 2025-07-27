@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from mapa.views import get_t42_data,get_devices_data
 from pparada.views import ParadaseguraListAPIView
 from mapa.views import TrafegusVeiculoView
@@ -18,3 +20,7 @@ urlpatterns = [
     path('trafegus/veiculo/', TrafegusVeiculoView.as_view(), name='trafegus_veiculo'),
     path('get_devices_data/', get_devices_data, name='get_devices_data'),
 ]
+
+# Adicionar URLs para servir arquivos de mídia em desenvolvimento
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

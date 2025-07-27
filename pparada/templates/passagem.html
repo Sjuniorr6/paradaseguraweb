@@ -3,149 +3,160 @@
 
 {% block title %}Passagem de Serviço{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+{% endblock extra_css %}
+
 {% block content %}
 {% include "components/components_sidebar.html" %}
 
-<!-- Contêiner que controla a rolagem -->
-<div style="max-height: 80vh; overflow-y: auto;">
-    
-    <!-- Imagem no topo, dentro do contêiner rolável -->
+<style>
+    body {
+        background-color: #4e5257;
+        margin-top: 30px;
+    }
+
+    /* Estilo padrão do título */
+    .titulo {
+        color: #ffffff;
+        font-weight: 700;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .titulo::after {
+        content: '';
+        display: block;
+        width: 60px;
+        height: 3px;
+        background-color: #F1C46B;
+        margin: 10px auto 0;
+    }
+
+    /* Card estilizado */
+    .card {
+        background-color: #ffffff;
+        border-radius: 12px;
+        border-top: 5px solid #8F7239;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+
+    .form-label {
+        color: #34495e;
+        font-weight: 600;
+        width: 150px;
+    }
+
+    .form-control, .form-select {
+        border-radius: 6px;
+        padding: 10px;
+    }
+
+    .btn-primary {
+        background-color: #8F7239;
+        border-color: #8F7239;
+        transition: all 0.3s ease;
+        font-weight: 600;
+    }
+
+    .btn-primary:hover {
+        background-color: #7a612f;
+        transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+        .form-group {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .form-label {
+            text-align: left;
+            width: 100% !important;
+            margin-bottom: 5px !important;
+        }
+    }
+</style>
+
+<div class="container my-4">
+
     <div class="text-center mb-4">
-        <img src="{% static 'images/backgrownd.png' %}" 
-             alt="Imagem de fundo" 
-             style="max-width: 150px;">
+        <img src="{% static 'images/backgrownd.png' %}" alt="Imagem de fundo" style="max-width: 150px;">
     </div>
 
-    <h3>Passagem de Serviço</h3>
+    <h2 class="titulo">Passagem de Serviço</h2>
+
     <div class="card">
-        <div class="card-body">
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
 
-                <!-- 1) Nome do PA -->
-                <div class="mb-2" style="display: flex; align-items: center;">
-                    <label for="id_nome_do_pa" style="width: 120px; margin-right: 10px;">
-                        Nome do PA
-                    </label>
-                    <div style="flex: 1;">
-                        {{ form.nome_do_pa }}
-                    </div>
-                </div>
+            <!-- Campos do formulário -->
+            <div class="form-group mb-3 d-flex align-items-center">
+                <label class="form-label">Nome do PA</label>
+                <div class="flex-fill">{{ form.nome_do_pa }}</div>
+            </div>
 
-                <!-- 2) Nome do Posto -->
-                <div class="mb-2" style="display: flex; align-items: center;">
-                    <label for="id_nome_do_posto" style="width: 120px; margin-right: 10px;">
-                        Nome do Posto
-                    </label>
-                    <div style="flex: 1;">
-                        {{ form.nome_do_posto }}
-                    </div>
-                </div>
+            <div class="form-group mb-3 d-flex align-items-center">
+                <label class="form-label">Nome do Posto</label>
+                <div class="flex-fill">{{ form.nome_do_posto }}</div>
+            </div>
 
-                <!-- 3) Turno -->
-                <div class="mb-2" style="display: flex; align-items: center;">
-                    <label for="id_turno" style="width: 120px; margin-right: 10px;">
-                        Turno
-                    </label>
-                    <div style="flex: 1;">
-                        {{ form.turno }}
-                    </div>
-                </div>
+            <div class="form-group mb-3 d-flex align-items-center">
+                <label class="form-label">Turno</label>
+                <div class="flex-fill">{{ form.turno }}</div>
+            </div>
 
-                <!-- 4) Iscas -->
-                <div class="mb-2" style="display: flex; align-items: center;">
-                    <label for="id_Iscas" style="width: 120px; margin-right: 10px;">
-                        Iscas
-                    </label>
-                    <div style="flex: 1;">
-                        {{ form.Iscas }}
-                    </div>
-                </div>
+            <div class="form-group mb-3 d-flex align-items-center">
+                <label class="form-label">Iscas</label>
+                <div class="flex-fill">{{ form.Iscas }}</div>
+            </div>
 
-                <!-- 5) Notebook -->
-                <div class="mb-2" style="display: flex; align-items: center;">
-                    <label for="id_notebook" style="width: 120px; margin-right: 10px;">
-                        Notebook
-                    </label>
-                    <div style="flex: 1;">
-                        {{ form.notebook }}
-                    </div>
-                </div>
+            <div class="form-group mb-3 d-flex align-items-center">
+                <label class="form-label">Notebook</label>
+                <div class="flex-fill">{{ form.notebook }}</div>
+            </div>
 
-                <!-- 6) Celular -->
-                <div class="mb-2" style="display: flex; align-items: center;">
-                    <label for="id_celular" style="width: 120px; margin-right: 10px;">
-                        Celular
-                    </label>
-                    <div style="flex: 1;">
-                        {{ form.celular }}
-                    </div>
-                </div>
+            <div class="form-group mb-3 d-flex align-items-center">
+                <label class="form-label">Celular</label>
+                <div class="flex-fill">{{ form.celular }}</div>
+            </div>
 
-                <!-- 7) Antena -->
-                <div class="mb-2" style="display: flex; align-items: center;">
-                    <label for="id_antena" style="width: 120px; margin-right: 10px;">
-                        Antena
-                    </label>
-                    <div style="flex: 1;">
-                        {{ form.antena }}
-                    </div>
-                </div>
+            <div class="form-group mb-3 d-flex align-items-center">
+                <label class="form-label">Antena</label>
+                <div class="flex-fill">{{ form.antena }}</div>
+            </div>
 
-                <!-- 8) Bodycam -->
-                <div class="mb-2" style="display: flex; align-items: center;">
-                    <label for="id_bodycam" style="width: 120px; margin-right: 10px;">
-                        Bodycam
-                    </label>
-                    <div style="flex: 1;">
-                        {{ form.bodycam }}
-                    </div>
-                </div>
+            <div class="form-group mb-3 d-flex align-items-center">
+                <label class="form-label">Bodycam</label>
+                <div class="flex-fill">{{ form.bodycam }}</div>
+            </div>
 
-                <!-- 9) Cadeados -->
-                <div class="mb-2" style="display: flex; align-items: center;">
-                    <label for="id_cadeados" style="width: 120px; margin-right: 10px;">
-                        Cadeados
-                    </label>
-                    <div style="flex: 1;">
-                        {{ form.cadeados }}
-                    </div>
-                </div>
+            <div class="form-group mb-3 d-flex align-items-center">
+                <label class="form-label">Cadeados</label>
+                <div class="flex-fill">{{ form.cadeados }}</div>
+            </div>
 
-                <!-- 10) Drone -->
-                <div class="mb-2" style="display: flex; align-items: center;">
-                    <label for="id_drone" style="width: 120px; margin-right: 10px;">
-                        Drone
-                    </label>
-                    <div style="flex: 1;">
-                        {{ form.drone }}
-                    </div>
-                </div>
+            <div class="form-group mb-3 d-flex align-items-center">
+                <label class="form-label">Drone</label>
+                <div class="flex-fill">{{ form.drone }}</div>
+            </div>
 
-                <!-- 11) Descrição -->
-                <div class="mb-2" style="display: flex; align-items: center;">
-                    <label for="id_descrição" style="width: 120px; margin-right: 10px;">
-                        Descrição
-                    </label>
-                    <div style="flex: 1;">
-                        {{ form.descrição }}
-                    </div>
-                </div>
+            <div class="form-group mb-3 d-flex align-items-center">
+                <label class="form-label">Descrição</label>
+                <div class="flex-fill">{{ form.descrição }}</div>
+            </div>
 
-                <!-- 12) Fotos -->
-                <div class="mb-2" style="display: flex; align-items: center;">
-                    <label for="id_fotos" style="width: 120px; margin-right: 10px;">
-                        Fotos
-                    </label>
-                    <div style="flex: 1;">
-                        {{ form.fotos }}
-                    </div>
-                </div>
+            <div class="form-group mb-4 d-flex align-items-center">
+                <label class="form-label">Fotos</label>
+                <div class="flex-fill">{{ form.fotos }}</div>
+            </div>
 
-                <!-- Botão de Salvar -->
-                <button type="submit" class="btn btn-primary">Salvar</button>
-            </form>
-        </div>
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary px-5">Salvar</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -157,10 +168,8 @@
         tipoPostoField.addEventListener('change', function() {
             const posto = tipoPostoField.value;
 
-            // Limpar opções anteriores
             nomeDoPAField.innerHTML = '<option value="">Selecione uma PA</option>';
 
-            // Obter PAs com base no posto
             fetch("{% url 'get_pa_choices' %}?tipo_posto=" + posto)
                 .then(response => response.json())
                 .then(data => {
@@ -171,12 +180,15 @@
                             option.text = pa[1];
                             nomeDoPAField.appendChild(option);
                         });
-                    } else {
-                        console.warn('Nenhuma PA encontrada para este posto.');
                     }
                 })
                 .catch(error => console.error('Erro ao buscar PAs:', error));
         });
     });
 </script>
+
 {% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock extra_js %}

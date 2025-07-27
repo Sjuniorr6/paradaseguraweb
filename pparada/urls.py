@@ -18,7 +18,6 @@ from .views import (
     paradaListView2,
     parada_delete,
     ParadaSeguraListView,
-   
     export_excel,
  
  
@@ -40,11 +39,8 @@ urlpatterns = [
     path('api/paradasegura/', ParadaseguraListAPIView.as_view(), name='paradasegura-list'),
     path('ponto/create/', PontoCreateView.as_view(), name='ponto_create'),
     path('parada/<int:id>/delete/', parada_delete, name='parada_delete'),
-     path('relatorios/', ParadaSeguraListView.as_view(), name='parada_segura_list'),
-     path('export/excel/', views.export_excel, name='excel_export'),
-    
-     
-   
+    path('relatorios/', ParadaSeguraListView.as_view(), name='parada_segura_list'),
+    path('export/excel/', views.export_excel, name='excel_export'),       
 ]
 
 # Inclua esta parte apenas se estiver em ambiente de desenvolvimento com DEBUG=True

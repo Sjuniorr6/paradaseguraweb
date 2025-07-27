@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grupo Golden Sat | Rastreamento & Segurança</title>
+
+  <!-- Fonts & CSS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+
+  <!-- AOS CSS -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/modais.css">
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Spinner de carregamento da página -->
+  <div id="pageLoadingSpinner" style="position:fixed;z-index:2000;top:0;left:0;width:100vw;height:100vh;background:rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;">
+    <div class="text-center">
+      <div class="spinner-border text-primary" role="status" style="width:4rem;height:4rem;">
+        <span class="visually-hidden">Carregando...</span>
+      </div>
+      <div class="mt-3">Carregando...</div>
+    </div>
+  </div>
+
+  <!-- ===== TOPO ===== -->
+  <header class="top-bar" data-aos="fade-down">
+    <div class="logo-container">
+      <img src="/logo-golden-branco.png" alt="Logo Golden Sat" class="logo" />
+      <span class="empresa-nome">Grupo Golden Sat</span>
+    </div>
+
+    <nav>
+      <a href="#produtos">Produtos</a>
+      <a href="#beneficios">Benefícios</a>
+      <a href="#depoimentos">Depoimentos</a>
+      <a href="#formulario" class="btn-top">Peça uma cotação</a>
+    </nav>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+    <div class="hero-inner" data-aos="fade-up">
+      <div class="text">
+        <h1>Segurança e Rastreio Para Quem Transporta Valor</h1>
+        <p>
+          Com mais de uma década de atuação, o <strong>Grupo Golden Sat</strong> oferece tecnologia de rastreamento e
+          iscas eletrônicas para prevenir perdas, agir rapidamente em crises e proteger sua carga do início ao fim da rota.
+        </p>
+      </div>
+
+      <!-- ===== FORMULÁRIO ===== -->
+      <div class="cta-form" id="formulario" data-aos="zoom-in">
+        <h2>Receba uma cotação personalizada</h2>
+        <form action="/api/salvar-formulario" method="POST" class="formulario">
+          <input type="text" name="cnpj" placeholder="CNPJ da empresa" required />
+          <input type="text" name="empresa" placeholder="Nome da empresa" required />
+          <input type="email" name="email" placeholder="Seu e-mail" required />
+          <input type="tel" name="telefone" placeholder="Seu telefone" required />
+          <select name="produto" required>
+            <option value="">Selecione o equipamento</option>
+            <option value="isca-eletronica">Isca Eletrônica</option>
+            <option value="gs-400">GS-400</option>
+            <option value="gs-440">GS-440</option>
+            <option value="gs-310">GS-310</option>
+            <option value="gs-390">GS-390</option>
+            <option value="mdvr">MDVR Veicular</option>
+            <option value="imobilizador">Imobilizador GS</option>
+          </select>
+          <button type="submit" class="btn-primary">Enviar</button>
+        </form>
+        <div class="seguro">Seus dados estão 100% seguros</div>
+        <div id="loadingSpinner" class="d-none text-center mt-3">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Enviando...</span>
+          </div>
+          <div>Enviando...</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PRODUTOS (CARROSSEL) ===== -->
+  <section id="produtos" class="produto-destaque fullscreen-section">
+    <div class="produto-topo" data-aos="fade-right">
+      <span class="alerta">🚨 PRODUTOS</span>
+      <h2 id="productTitle">Isca Eletrônica</h2>
+      <p id="productDescription">
+        Portátil, funciona sem energia do veículo. Ideal para rastreamento em caso de roubos
+        de bens e controle logístico. Disponível em modelo descartável (30 dias) ou retornável
+        ilimitado.
+      </p>
+    </div>
+
+    <div class="produto-corpo">
+      <div class="produto-imagem" data-aos="zoom-in">
+        <img id="productImage" src="/isca.png" alt="Imagem do produto" />
+      </div>
+
+      <div class="produto-beneficios" data-aos="fade-left" data-aos-delay="200">
+        <div class="card-beneficio">
+          <strong>Alta Precisão</strong>
+          <p>Localização a cada minuto com energia.</p>
+        </div>
+        <div class="card-beneficio">
+          <strong>Anti-jammer</strong>
+          <p>Detecta bloqueadores de sinal.</p>
+        </div>
+        <div class="card-beneficio">
+          <strong>Resistente</strong>
+          <p>Modelo IP67 contra água e poeira.</p>
+        </div>
+        <div class="card-beneficio">
+          <strong>Segurança Inteligente</strong>
+          <p>Monitoramento com zonas seguras e alertas.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="produto-acoes" data-aos="fade-up" data-aos-delay="200">
+      <button class="btn-amarelo">🔒 Solicitar Cotação</button>
+      <button class="btn-transparente">📺 Ver Demonstração</button>
+    </div>
+
+    <div class="carousel-controls" data-aos="fade-up" data-aos-delay="400">
+      <button id="prevBtn" aria-label="Anterior">◀</button>
+      <button id="nextBtn" aria-label="Próximo">▶</button>
+    </div>
+  </section>
+
+  <!-- ===== BENEFÍCIOS ===== -->
+  <section id="beneficios" class="benefits fullscreen-section">
+    <h2 data-aos="fade-up">O que torna a Golden Sat líder em segurança?</h2>
+
+    <div class="grid">
+      <article data-aos="fade-up">
+        <img src="/versatilidade.png" alt="Versatilidade" />
+        <h3>Versatilidade total</h3>
+        <p>Do portátil descartável ao fixo veicular ou localizadores avançados.</p>
+      </article>
+
+      <article data-aos="fade-up" data-aos-delay="150">
+        <img src="/tecnologia.png" alt="Tecnologia" />
+        <h3>Tecnologia múltipla</h3>
+        <p>GPS, GPRS, RF e LoRa/LoraWAN garantem rastreio firme mesmo com bloqueadores.</p>
+      </article>
+
+      <article data-aos="fade-up" data-aos-delay="300">
+        <img src="/autonomia.png" alt="Autonomia" />
+        <h3>Alta autonomia</h3>
+        <p>Dispositivos com bateria para 30 dias, 6 meses ou energia contínua.</p>
+      </article>
+
+      <article data-aos="fade-up" data-aos-delay="450">
+        <img src="/monitoramento.png" alt="Monitoramento" />
+        <h3>Monitoramento contínuo</h3>
+        <p>Combo de central, táticos, sensores e zonas de segurança.</p>
+      </article>
+
+      <!-- MÉTRICAS -->
+      <div class="benefit-metrics-card full-width" data-aos="zoom-in" data-aos-delay="600">
+        <p class="badge">✅ Mais de 10.000 Veículos Protegidos no Brasil</p>
+        <div class="metric-row">
+          <div class="metric">
+            <strong>98%</strong>
+            <span>Taxa de Recuperação</span>
+          </div>
+          <div class="metric">
+            <strong>24h</strong>
+            <span>Suporte Técnico</span>
+          </div>
+          <div class="metric">
+            <strong>5⭐</strong>
+            <span>Avaliação Clientes</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PLANOS ===== -->
+  <section class="plans">
+    <h2 data-aos="fade-up">Compare e escolha a melhor solução para sua carga</h2>
+    <div class="grid">
+      <div class="plan-card" data-aos="flip-left">
+        <img src="/isca-icon.png" alt="Isca Eletrônica" class="plan-icon" />
+        <h3>Isca Eletrônica</h3>
+        <p>Descartável ou retornável — ideal para proteção pontual ou contínua.</p>
+        <button class="btn-secundario">Ver Detalhes</button>
+      </div>
+
+      <div class="plan-card" data-aos="flip-left" data-aos-delay="200">
+        <img src="/localizador-icon.png" alt="Localizadores GS" class="plan-icon" />
+        <h3>Localizadores GS</h3>
+        <p>GS-400, GS-440, GS-310, GS-390 — rastreamento em vagões, carretas e veículos.</p>
+        <button class="btn-secundario">Ver Detalhes</button>
+      </div>
+
+      <div class="plan-card" data-aos="flip-left" data-aos-delay="400">
+        <img src="/imobilizador-icon.png" alt="MDVR & Imobilizador" class="plan-icon" />
+        <h3>MDVR & Imobilizador</h3>
+        <p>Monitoramento com vídeo + imobilização automática para segurança veicular.</p>
+        <button class="btn-secundario">Ver Detalhes</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DEPOIMENTOS ===== -->
+  <section id="depoimentos" class="depoimentos-secao">
+    <div class="depoimentos-topo" data-aos="fade-up">
+      <h2><span style="color: var(--amarelo-golden)">O que dizem</span> nossos clientes?</h2>
+      <p>Avaliações reais sobre os produtos e o suporte da Golden Sat</p>
+    </div>
+
+    <div class="depoimentos-carousel-multiplos">
+      <div class="depoimento-card" data-aos="fade-up">
+        <div class="aspas">"</div>
+        <p>Localizamos 100% da carga em menos de 1h com a isca Golden Sat descartável.</p>
+        <div class="estrelas">⭐⭐⭐⭐⭐</div>
+        <cite>— Cliente do setor farmacêutico</cite>
+      </div>
+
+      <div class="depoimento-card" data-aos="fade-up" data-aos-delay="200">
+        <div class="aspas">"</div>
+        <p>Reduzimos em 70% as perdas com roubos desde que adotamos os localizadores na frota.</p>
+        <div class="estrelas">⭐⭐⭐⭐⭐</div>
+        <cite>— Operador logístico</cite>
+      </div>
+
+      <div class="depoimento-card" data-aos="fade-up" data-aos-delay="400">
+        <div class="aspas">"</div>
+        <p>Atendimento excelente e suporte imediato, conseguimos recuperar um carregamento em tempo recorde.</p>
+        <div class="estrelas">⭐⭐⭐⭐⭐</div>
+        <cite>— Gerente de logística</cite>
+      </div>
+    </div>
+  </section>
+
+  <!-- Rodapé -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2024 GS Automação. Todos os direitos reservados.</p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script src="js/modais.js"></script>
+  <script>
+    AOS.init({
+      duration: 800,
+      once: true
+    });
+  </script>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    window.onload = function() {
+      var pageSpinner = document.getElementById('pageLoadingSpinner');
+      if (pageSpinner) pageSpinner.style.display = 'none';
+    }
+  </script>
+
+  <!-- Toast de sucesso -->
+  <div class="position-fixed top-0 end-0 p-3" style="z-index: 3000">
+    <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">
+          Formulário enviado com sucesso! Em breve entraremos em contato.
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

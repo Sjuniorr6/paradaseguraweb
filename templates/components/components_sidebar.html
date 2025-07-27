@@ -2,134 +2,227 @@
 {% load static %}
 
 {% block content %}
-<style>
-  /* Estilos gerais */
-  .menu-button {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    background-color: #2d2d2d;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    font-size: 24px;
-    cursor: pointer;
-    border-radius: 5px;
-    z-index: 1000; /* Sempre acima de tudo */
-  }
 
-  /* Sidebar oculta por padrão */
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: -250px;
-    width: 250px;
-    height: 100vh;
-    background-color: #222;
-    color: white;
-    transition: left 0.3s ease-in-out;
-    padding-top: 60px;
-    box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.5);
-    z-index: 999;
-  }
+<!-- Material Icons CDN -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 
-  /* Quando a sidebar estiver ativa */
-  .sidebar.active {
-    left: 0;
-  }
+<!-- BOTÃO DE TOGGLE (Hamburguer) -->
+<button id="sidebarToggle" class="sidebar-toggle-btn d-md-none">
+  <span class="material-icons">menu</span>
+</button>
 
-  .sidebar ul {
-    list-style-type: none;
-    padding: 0;
-  }
-
-  .sidebar ul li {
-    padding: 10px 20px;
-  }
-
-  .sidebar ul li a {
-    color: white;
-    text-decoration: none;
-    display: block;
-    transition: background 0.3s;
-  }
-
-  .sidebar ul li a:hover {
-    background: #444;
-  }
-
-  .close-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 24px;
-    cursor: pointer;
-  }
-
-  /* Overlay escuro quando sidebar estiver ativa */
-  .overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.5);
-    display: none;
-    z-index: 998;
-  }
-
-  .overlay.active {
-    display: block;
-  }
-</style>
-
-<!-- Botão do menu sempre visível -->
-<button class="menu-button" onclick="openSidebar()">☰</button>
-
-<!-- Sidebar lateral -->
+<!-- SIDEBAR -->
 <div id="sidebar" class="sidebar">
-  <span class="close-btn" onclick="closeSidebar()">×</span>
   <ul>
-    <li><a href="{% url 'home' %}">Home</a></li>
+    <li><a href="{% url 'home' %}"><span class="material-icons">home</span><span class="text">Home</span></a></li>
+
     {% if perms.pparada.add_paradasegura_ponto %}
-    <li><a href="{% url 'estoque'%}">Estoque</a></li>
+    <li><a href="{% url 'estoque'%}"><span class="material-icons">inventory_2</span><span class="text">Estoque</span></a></li>
     {% endif %}
+
     {% if perms.empresas.add_empresasmodels %}
-    <li><a href="{% url 'mapa2'%}">Operaçoes</a></li>
-    <li><a href="{% url 'parada_segura_list'%}">Relatorios</a></li>
-    <li><a href="{% url 'criar_transportador' %}">Cadastro Transportadora</a></li>
-    <li><a href="{% url 'lista_trasportadores'%}">Lista de Transportadoras</a></li>
-    <li><a href="{% url 'criar_empresa'%}">Cadastro de Empresas</a></li>
-    <li><a href="{% url 'listar_empresa'%}">Lista de Empresas</a></li>
-    <li><a href="{% url 'paradaseguralist2'%}">Paradas</a></li>
-    <li><a href="{% url 'trafegus_veiculo'%}">Eventos</a></li>
+    <li><a href="{% url 'mapa2'%}"><span class="material-icons">map</span><span class="text">Operações</span></a></li>
+    <li><a href="{% url 'parada_segura_list'%}"><span class="material-icons">assessment</span><span class="text">Relatórios</span></a></li>
+    <li><a href="{% url 'criar_transportador' %}"><span class="material-icons">local_shipping</span><span class="text">Cadastro Transportadora</span></a></li>
+    <li><a href="{% url 'lista_trasportadores'%}"><span class="material-icons">format_list_bulleted</span><span class="text">Lista Transportadoras</span></a></li>
+    <li><a href="{% url 'criar_empresa'%}"><span class="material-icons">business</span><span class="text">Cadastro de Empresas</span></a></li>
+    <li><a href="{% url 'listar_empresa'%}"><span class="material-icons">apartment</span><span class="text">Lista de Empresas</span></a></li>
+    <li><a href="{% url 'paradaseguralist2'%}"><span class="material-icons">flag</span><span class="text">Histórico de Paradas</span></a></li>
+    <li><a href="{% url 'trafegus_veiculo'%}"><span class="material-icons">directions_car</span><span class="text">Eventos</span></a></li>
     {% endif %}
+
     {% if perms.pparada.add_paradasegura %}
-    <li><a href="{% url 'paradaseguralist'%}">Paradas</a></li>
-    <li><a href="{% url 'paradaseguraform'%}">Formulario de Parada</a></li>
-    <li><a href="{% url 'historico_parada'%}">Historico de Parada</a></li>
-    <li><a href="{% url 'passagemCreateView'%}">Passagem de Serviço</a></li>
-    <li><a href="{% url 'historico_passagem'%}">Historico de Passagens</a></li>
-    <li><a href="{% url 'paradaseguralist'%}">Lista de Paradas</a></li>
-    <li><a href="{% url 'mapa'%}">Mapa</a></li>
-    <li><a href="{% url 'ponto_create'%}">Registro de Ponto</a></li>
+    <li><a href="{% url 'paradaseguralist'%}"><span class="material-icons">place</span><span class="text">Lista de Paradas</span></a></li>
+    <li><a href="{% url 'paradaseguraform'%}"><span class="material-icons">description</span><span class="text">Formulário de Parada</span></a></li>
+    <li><a href="{% url 'historico_parada'%}"><span class="material-icons">history</span><span class="text">Histórico de Paradas</span></a></li>
+    <li><a href="{% url 'passagemCreateView'%}"><span class="material-icons">swap_horiz</span><span class="text">Passagem de Serviço</span></a></li>
+    <li><a href="{% url 'historico_passagem'%}"><span class="material-icons">manage_history</span><span class="text">Histórico de Passagens</span></a></li>
+    <li><a href="{% url 'mapa'%}"><span class="material-icons">public</span><span class="text">Mapa</span></a></li>
+    <li><a href="{% url 'ponto_create'%}"><span class="material-icons">schedule</span><span class="text">Registro de Ponto</span></a></li>
     {% endif %}
+
+    <!-- Botão de Sair (Logout) -->
+    <li>
+      <form action="{% url 'logout' %}" method="post" class="logout-form">
+        {% csrf_token %}
+        <button type="submit" class="sidebar-link logout-button">
+          <span class="material-icons">logout</span>
+          <span class="text">Sair</span>
+        </button>
+      </form>
+    </li>
   </ul>
 </div>
 
-<!-- Overlay para escurecer fundo quando aberto -->
-<div id="overlay" class="overlay" onclick="closeSidebar()"></div>
+<!-- CONTEÚDO PRINCIPAL -->
+<div class="content">
+  <!-- Coloque aqui o conteúdo principal da página -->
+</div>
 
-<!-- Script para abrir e fechar a Sidebar -->
+<!-- ESTILOS -->
+<style>
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 60px;
+  height: 100vh;
+  background: linear-gradient(to bottom, #F1C46B, #8F7239);
+  transition: width 0.3s ease-in-out;
+  overflow-x: hidden;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 3px 0 10px rgba(0,0,0,0.4);
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(255,255,255,0.3);
+  border-radius: 10px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar ul li {
+  padding: 10px 0;
+}
+
+.sidebar ul li a,
+.sidebar-link {
+  color: #ffffff;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  padding: 8px 15px;
+  white-space: nowrap;
+  transition: background 0.3s ease;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.sidebar ul li a:hover,
+.sidebar-link:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.sidebar ul li a .material-icons,
+.sidebar-link .material-icons {
+  font-size: 26px;
+  margin-right: 15px;
+}
+
+.sidebar ul li a .text,
+.sidebar-link .text {
+  opacity: 0;
+  transition: opacity 0.3s ease 0.1s;
+  overflow: hidden;
+}
+
+.sidebar:hover ul li a .text,
+.sidebar:hover .sidebar-link .text {
+  opacity: 1;
+}
+
+.sidebar.active ul li a .text,
+.sidebar.active .sidebar-link .text {
+  opacity: 1;
+}
+
+.sidebar:hover,
+.sidebar.active {
+  width: 240px; /* estava 220px, aumente um pouco se precisar */
+}
+
+.logout-form {
+  margin: 0;
+  padding: 0;
+}
+
+.content {
+  margin-left: 60px;
+  transition: margin-left 0.3s ease-in-out;
+}
+
+.sidebar:hover {
+  width: 220px;
+}
+.sidebar:hover ~ .content {
+  margin-left: 230px;
+}
+
+/* Botão toggle (mobile) */
+.sidebar-toggle-btn {
+  position: fixed;
+  top: 4px;
+  left: 10px;
+  z-index: 1100;
+  background-color: #8F7239;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  display: none;
+}
+
+/* Corrige o botão de toggle aparecendo no mobile */
+@media (max-width: 768px) {
+  .sidebar-toggle-btn {
+    display: block;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    width: 220px;
+    position: fixed;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.active {
+    transform: translateX(0);
+  }
+
+  .content {
+    margin-left: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .sidebar:hover ~ .content {
+    margin-left: 0;
+  }
+}
+
+</style>
+
+<!-- SCRIPT DE TOGGLE -->
 <script>
-  function openSidebar() {
-    document.getElementById("sidebar").classList.add("active");
-    document.getElementById("overlay").classList.add("active");
+document.addEventListener("DOMContentLoaded", function () {
+  const sidebar = document.getElementById("sidebar");
+  const toggleBtn = document.getElementById("sidebarToggle");
+
+  function isMobileDevice() {
+    return /Mobi|Android|iPhone/i.test(navigator.userAgent);
   }
 
-  function closeSidebar() {
-    document.getElementById("sidebar").classList.remove("active");
-    document.getElementById("overlay").classList.remove("active");
+  if (isMobileDevice() && toggleBtn) {
+    toggleBtn.addEventListener("click", function () {
+      sidebar.classList.toggle("active");
+    });
   }
+});
 </script>
-{% endblock content %}
+
+{% endblock %}

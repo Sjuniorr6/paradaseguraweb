@@ -3,47 +3,171 @@
 
 {% block content %}
 {% include "components/components_sidebar.html" %}
-
+<style>
+  body {
+    margin-top: 40px !important;  
+  }
+  
+  .container-fluid {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    padding: 25px;
+    margin-top: 20px;
+    overflow-y: auto;
+    min-height: 100vh;
+    max-width: 1500px; /* Limita largura máxima */
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  h2 {
+    font-weight: 600;
+    color: #34495e;
+    border-bottom: 3px solid #F1C46B;
+    display: inline-block;
+    margin-bottom: 25px !important;
+    padding-bottom: 8px;
+    text-align: center;
+  }
+  
+  .container-fluid .text-center img {
+    margin-bottom: 15px;
+  }
+  
+  /* Formulário de filtros mais compacto */
+  form {
+    background-color: #f0f4f9;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+  
+  /* Redução de espaçamento nos campos */
+  form label {
+    font-weight: 500;
+    margin-bottom: 5px;
+  }
+  
+  form .form-control {
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    height: 38px;
+  }
+  
+  form button.btn-primary,
+  form .btn-secondary {
+    height: 38px;
+    padding: 5px 10px;
+  }
+  
+  /* Ajustes na tabela para ocupar menos espaço */
+  .table {
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 14px; /* Texto menor para ocupar menos espaço */
+  }
+  
+  .table thead {
+    background-color: #007bff;
+    color: #ffffff;
+  }
+  
+  .table th, .table td {
+    vertical-align: middle;
+    text-align: center;
+    padding: 8px; /* menos espaçamento interno */
+  }
+  
+  .table tbody tr:hover {
+    background-color: #f1f9ff;
+  }
+  
+  /* Botões menores na tabela */
+  .table .btn-sm {
+    padding: 3px 8px;
+    font-size: 13px;
+  }
+  
+  /* Modal de exclusão (compacto) */
+  .modal-dialog {
+    max-width: 450px;
+  }
+  
+  .modal-header, .modal-footer {
+    padding: 10px 15px;
+  }
+  
+  .modal-body {
+    padding: 15px;
+    font-size: 14px;
+  }
+  
+  /* Paginação mais compacta */
+  .pagination {
+    margin-top: 15px;
+  }
+  
+  .pagination .page-link {
+    padding: 5px 10px;
+    font-size: 14px;
+  }
+  
+  /* Responsividade */
+  @media (max-width: 768px) {
+    .container-fluid {
+      padding: 10px;
+    }
+    form .row {
+      flex-direction: column;
+    }
+    form .row .col-sm-2,
+    form .row .col-sm-6 {
+      width: 100%;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    form button, form .btn-secondary {
+      width: 100%;
+    }
+  }
+  </style>
+    
 <!-- Contêiner principal ocupando a tela toda -->
 <div class="container-fluid py-4" style="min-height: 100vh; overflow-y: auto;">
 
-    <div class="text-center mb-4">
+    <!--<div class="text-center mb-4">
         <img src="{% static 'images/backgrownd.png' %}" 
              alt="Imagem de fundo" 
              style="max-width: 150px;">
-    </div>
+    </div>-->
 
     <h2 class="text-center mb-4">Histórico de Paradas</h2>
 
     <!-- Formulário de Filtro por Embarcador -->
     <form method="get" action="." class="mb-4">
-        <div class="row justify-content-center">
-            <label for="embarcador" class="col-sm-2 col-form-label text-right">
-                Pesquisar por Embarcador:
-            </label>
-            <div class="col-sm-6">
-                <input
-                    type="text"
-                    name="embarcador"
-                    id="embarcador"
-                    class="form-control"
-                    placeholder="Digite o nome do embarcador"
-                    value="{{ request.GET.embarcador }}"
-                />
-            </div>
-            <div class="col-sm-2">
-                <button type="submit" class="btn btn-primary w-100">Filtrar</button>
-            </div>
+      <div class="row justify-content-center">
+        <label for="embarcador" class="col-sm-2 col-form-label text-right">
+          Pesquisar por Embarcador:
+        </label>
+        <div class="col-sm-6">
+          <input
+            type="text"
+            name="embarcador"
+            id="embarcador"
+            class="form-control"
+            placeholder="Digite o nome do embarcador"
+            value="{{ request.GET.embarcador }}"
+          />
         </div>
-        <!-- Botão Limpar Filtros -->
-        <div class="row justify-content-center mt-2">
-            <div class="col-sm-2 text-center">
-                <a href="{% url 'historico_parada' %}" class="btn btn-secondary w-100">Limpar Filtros</a>
-            </div>
+        <div class="col-sm-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm w-100">Filtrar</button>
+          <a href="{% url 'historico_parada' %}" class="btn btn-outline-secondary btn-sm w-100">Limpar Filtros</a>
         </div>
+      </div>
     </form>
-
-
+    
 
     <!-- Tabela para Exibir a Lista de Paradas -->
     <div class="table-responsive">
@@ -86,18 +210,22 @@
                 -
               {% endif %}
             </td>
-            <td>
-              <!-- Botão Visualizar -->
-              <a href="{% url 'Parada2DetailView' item.id %}" class="btn btn-primary btn-sm mb-1">
-                Visualizar
-              </a>
-
-              <!-- Botão que abre o modal de exclusão -->
-              <button class="btn btn-danger btn-sm"
-                      data-bs-toggle="modal"
-                      data-bs-target="#modalExcluir{{ item.id }}">
-                Excluir
-              </button>
+            <td class="text-center">
+              <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <!-- Botão Visualizar -->
+                <a href="{% url 'Parada2DetailView' item.id %}" class="btn btn-primary btn-sm">
+                  Visualizar
+                </a>
+            
+                <!-- Botão que abre o modal de exclusão -->
+                <button class="btn btn-danger btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalExcluir{{ item.id }}">
+                  Excluir
+                </button>
+              </div>
+            </td>
+                      
 
               <!-- Modal de confirmação de exclusão (Bootstrap 5) -->
               <div class="modal fade"

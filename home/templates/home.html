@@ -1,21 +1,115 @@
 {% extends "base.html" %}
-
+{% load static %}
 {% block content %}
 
-<!-- Inclui a Sidebar/Navbar Responsiva -->
+<!-- Sidebar/Navbar -->
 {% include "components/components_sidebar.html" %}
+<style>
+  body {
+    margin-top: 30px;
+}
 
-<div class="container d-flex flex-column justify-content-center align-items-center" style="min-height: 100vh; text-align: center;">
-  <div class="bg-dark bg-opacity-75 p-4 rounded shadow text-white" style="max-width: 400px;">
-    <h1 class="mb-3">Bem-vindo, {{ user.username }}</h1>
-    <p></p>
+h1, h2, h3, h4, h5 {
+  color: #2c3e50;
+  font-weight: 600;
+}
 
-    <!-- Botão de Logout com POST -->
-    <form action="{% url 'logout' %}" method="post">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-danger w-100">ALERTA</button>
-    </form>
+p {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1000px;
+}
+
+.bg-white {
+  background: #ffffff;
+}
+
+.shadow-sm {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.rounded {
+  border-radius: 12px;
+}
+
+ol {
+  padding-left: 1.2rem;
+}
+
+ol li {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+
+ol li strong {
+  color: #8F7239;
+}
+
+a.btn {
+  transition: all 0.3s ease-in-out;
+}
+
+a.btn:hover {
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  ol li {
+    font-size: 0.95rem;
+  }
+}
+
+</style>
+<div class="container my-5">
+
+  <div class="p-4 bg-white rounded shadow-sm mb-4">
+    <h2 class="mb-3">Bem-vindo à Plataforma Parada Segura</h2>
+    <p>
+      O <strong>Aplicativo Parada Segura</strong> é uma solução inovadora que promove a segurança e eficiência em paradas de veículos. Desenvolvido para uso por agentes, gerenciadoras de risco e clientes, ele permite verificações completas, registro de não conformidades e visualização de dados em tempo real.
+    </p>
+    <p>
+      Através de uma interface intuitiva, o sistema garante o controle rigoroso de documentos, tecnologias embarcadas, e registros fotográficos, fortalecendo a rastreabilidade dos veículos e promovendo decisões ágeis e seguras.
+    </p>
   </div>
+
+  <div class="p-4 bg-white rounded shadow-sm">
+    <h4 class="mb-3">Principais Funcionalidades</h4>
+
+    <ol class="ps-3">
+      <li>
+        <strong>Formulário de Auditoria</strong><br>
+        Registro completo das informações do veículo, motorista e carga, com dados de CNH, Renavam, placas e fotos detalhadas.
+      </li>
+      <li class="mt-3">
+        <strong>Tecnologias Embarcadas</strong><br>
+        Controle e rastreamento de dispositivos como iscas e cadeados inteligentes, com associação/desassociação em tempo real.
+      </li>
+      <li class="mt-3">
+        <strong>Arquivos e Checklists</strong><br>
+        Armazenamento de dados das auditorias, atualizações e não conformidades, com histórico acessível a qualquer momento.
+      </li>
+      <li class="mt-3">
+        <strong>Últimas Paradas</strong><br>
+        Histórico recente com resumo da auditoria e status da Parada Segura.
+      </li>
+      <li class="mt-3">
+        <strong>Acesso do Cliente</strong><br>
+        Visualização em tempo real da localização do veículo, tecnologias embarcadas, status de auditoria e resumo completo do checklist via app ou plataforma web.
+      </li>
+      <li class="mt-3">
+        <strong>Integração com Central de Crise</strong><br>
+        Resposta rápida a incidentes com base em dados coletados, garantindo segurança total para a operação.
+      </li>
+    </ol>
+  </div>
+
 </div>
 
 {% endblock %}

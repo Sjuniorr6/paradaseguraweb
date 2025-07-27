@@ -4,6 +4,100 @@
 {% block content %}
 {% include "components/components_sidebar.html" %}
 
+<Style>
+  body {
+    margin-top: 30px;
+  }
+
+  /* Container principal estilizado */
+  .container {
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    padding: 25px;
+    margin-top: 70px;
+    max-width: 1500px; /* Limita largura máxima */
+  }
+
+  /* Título da página estilizado */
+  h2 {
+    font-size: 24px;
+    color: #34495e;
+    border-bottom: 3px solid #F1C46B;
+    display: inline-block;
+    padding-bottom: 5px;
+    margin-bottom: 20px;
+  }
+
+  /* Tabela estilizada */
+  .table {
+    margin-top: 15px;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .table thead {
+    background: linear-gradient(160deg, #F1C46B, #8F7239);
+    color: #ffffff;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .table tbody td {
+    text-align: center;
+    vertical-align: middle;
+    font-size: 15px;
+    color: #495057;
+  }
+
+  .table-striped tbody tr:nth-of-type(odd) {
+    background-color: #f8f9fa;
+  }
+
+  .table-hover tbody tr:hover {
+    background-color: #e9ecef;
+  }
+
+  /* Botões padrão arredondados com efeito hover */
+  .btn {
+    border-radius: 6px;
+    transition: transform 0.2s ease;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Modal estilizado */
+  .modal-content {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+  }
+
+  .modal-header {
+    background: linear-gradient(160deg, #dc3545, #b02a37);
+  }
+
+  .modal-title {
+    font-weight: 500;
+  }
+
+  /* Responsividade aprimorada */
+  @media (max-width: 768px) {
+    .container {
+      padding: 15px;
+      margin-top: 20px;
+    }
+    .table-responsive {
+      overflow-x: auto;
+    }
+    h2 {
+      font-size: 20px;
+    }
+  }
+</style>
+
 <div class="container mt-5">
   <h2>Lista de Empresas</h2>
 
