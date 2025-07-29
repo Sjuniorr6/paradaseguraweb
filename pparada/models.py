@@ -166,7 +166,7 @@ class paradasegura(models.Model):
             'pa': [
                 ('1', 'Fabiane'),
                 ('2', 'Gustavo'),
-                ('3 ', 'Oliver '),
+                ('3 ', 'Pamela '),
                 ('4', 'Larissa'),
                
            
@@ -174,7 +174,7 @@ class paradasegura(models.Model):
         },
         '2': {
             'pa': [
-                ('1', 'Claudinei'),
+                ('1', 'Deny'),
                 ('2', 'Herick'),
                 ('3', 'Heliene'),
                 ('4', 'Jéssica'),
@@ -184,18 +184,19 @@ class paradasegura(models.Model):
         },
         '3': {
             'pa': [
-                ('1', 'Valterson'),
-                ('2', 'Ademir'),
-                ('3', 'Wesley'),
+                ('1', 'Matheus Lucas'),
+                ('2', 'Hiago Martins'),
+                ('3', 'Lorrane Lemos'),
+                ('3', 'Valterson Viana'),
                
             ],
             
         },
         '4': {
             'pa': [
-                ('1', 'Rafael'),
+                ('1', 'Zildo'),
                 ('2', 'Felipe'),
-                ('3', 'Patrícia'),
+                ('3', 'Licinio'),
                 ('4', 'Rone'),
                 
             ],
@@ -204,8 +205,8 @@ class paradasegura(models.Model):
         '5': {
             'pa': [
                 ('1', 'João'),
-                ('2', 'Daniely'),
-                ('3', 'Talia'),
+                ('2', 'Keven'),
+                ('3', 'Weslei'),
                 ('4', 'Robson'),
                
             ],
@@ -213,17 +214,17 @@ class paradasegura(models.Model):
         },
         '6': {
             'pa': [
-                ('1', 'Davidson'),
-                ('2', 'Luiz Gustavo'),
-                ('3', 'Nicoly'),
-                ('4', 'Claudemir'),
+                ('1', 'Thiago'),
+                ('2', 'Nicoly'),
+                ('3', 'Davidson'),
+                ('4', 'Robson'),
                 
             ],
            
         },
         '7': {
             'pa': [
-                ('1', 'Silvio'),
+                ('1', 'Lucas Euzébio'),
                 ('2 ', 'Eduardo '),
                 ('3', 'Josielin'),
                 ('4', 'Luiz Henrique'),
