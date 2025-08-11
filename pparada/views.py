@@ -20,6 +20,9 @@ from PIL import Image, ImageDraw, ImageFont
 import os
 import time
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+import json
 
 
 class paradaCreateView(LoginRequiredMixin,PermissionRequiredMixin,CreateView):
@@ -437,3 +440,265 @@ def export_excel(request):
     # 7. Salvar a planilha no response
     wb.save(response)
     return response
+
+
+# ============================================================================
+# API ENDPOINTS JSON PARA PARADASEGURA
+# ============================================================================
+
+@csrf_exempt
+def paradasegura_api_list(request):
+    """
+    Endpoint para listar todas as paradas seguras em formato JSON
+    GET: Retorna lista de todas as paradas
+    """
+    if request.method == 'GET':
+        try:
+            # Obter parâmetros de filtro
+            embarcador = request.GET.get('embarcador', '')
+            status = request.GET.get('status', '')
+            tipo_parada = request.GET.get('tipo_parada', '')
+            
+            # Filtrar queryset
+            queryset = paradasegura.objects.all()
+            
+            if embarcador:
+                queryset = queryset.filter(embarcador__icontains=embarcador)
+            if status:
+                queryset = queryset.filter(status=status)
+            if tipo_parada:
+                queryset = queryset.filter(tipo_parada=tipo_parada)
+            
+            # Serializar dados
+            data = []
+            for parada in queryset:
+                parada_data = {
+                    'id': parada.id,
+                    'nome_do_pa': parada.nome_do_pa,
+                    'data_criacao': parada.data_criacao.isoformat() if parada.data_criacao else None,
+                    'embarcador': parada.embarcador,
+                    'transportador': parada.transportador,
+                    'placa_cavalo': parada.placa_cavalo,
+                    'placa_carreta': parada.placa_carreta,
+                    'nome_motorista': parada.nome_motorista,
+                    'tipo_posto': parada.tipo_posto,
+                    'descreva': parada.descreva,
+                    'id_rastreador': parada.id_rastreador,
+                    'id_cadeado': parada.id_cadeado,
+                    'tipo_parada': parada.tipo_parada,
+                    'status': parada.status,
+                    'saida': parada.saida.isoformat() if parada.saida else None,
+                    'ciente_do_projeto': parada.ciente_do_projeto,
+                    'outros_embarcador': parada.outros_embarcador,
+                    'previsao_saida': parada.previsao_saida,
+                    'previsao_de_saida': parada.previsao_de_saida,
+                    'Horario_de_saida': parada.Horario_de_saida,
+                    'inconformidade': parada.inconformidade,
+                }
+                data.append(parada_data)
+            
+            return JsonResponse({
+                'success': True,
+                'count': len(data),
+                'data': data
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Método não permitido'
+    }, status=405)
+
+
+@csrf_exempt
+def paradasegura_api_detail(request, pk):
+    """
+    Endpoint para obter detalhes de uma parada específica
+    GET: Retorna detalhes da parada
+    """
+    if request.method == 'GET':
+        try:
+            parada = get_object_or_404(paradasegura, pk=pk)
+            
+            data = {
+                'id': parada.id,
+                'nome_do_pa': parada.nome_do_pa,
+                'data_criacao': parada.data_criacao.isoformat() if parada.data_criacao else None,
+                'embarcador': parada.embarcador,
+                'transportador': parada.transportador,
+                'placa_cavalo': parada.placa_cavalo,
+                'placa_carreta': parada.placa_carreta,
+                'nome_motorista': parada.nome_motorista,
+                'tipo_posto': parada.tipo_posto,
+                'descreva': parada.descreva,
+                'id_rastreador': parada.id_rastreador,
+                'id_cadeado': parada.id_cadeado,
+                'tipo_parada': parada.tipo_parada,
+                'status': parada.status,
+                'saida': parada.saida.isoformat() if parada.saida else None,
+                'ciente_do_projeto': parada.ciente_do_projeto,
+                'outros_embarcador': parada.outros_embarcador,
+                'previsao_saida': parada.previsao_saida,
+                'previsao_de_saida': parada.previsao_de_saida,
+                'Horario_de_saida': parada.Horario_de_saida,
+                'inconformidade': parada.inconformidade,
+            }
+            
+            return JsonResponse({
+                'success': True,
+                'data': data
+            })
+            
+        except paradasegura.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Parada não encontrada'
+            }, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Método não permitido'
+    }, status=405)
+
+
+@csrf_exempt
+def paradasegura_api_create(request):
+    """
+    Endpoint para criar uma nova parada
+    POST: Cria nova parada
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Criar nova parada
+            nova_parada = paradasegura.objects.create(
+                nome_do_pa=data.get('nome_do_pa'),
+                embarcador=data.get('embarcador'),
+                transportador=data.get('transportador'),
+                placa_cavalo=data.get('placa_cavalo'),
+                placa_carreta=data.get('placa_carreta'),
+                nome_motorista=data.get('nome_motorista'),
+                tipo_posto=data.get('tipo_posto'),
+                descreva=data.get('descreva'),
+                id_rastreador=data.get('id_rastreador'),
+                id_cadeado=data.get('id_cadeado'),
+                tipo_parada=data.get('tipo_parada'),
+                status=data.get('status', 'AGUARDANDO'),
+                ciente_do_projeto=data.get('ciente_do_projeto'),
+                outros_embarcador=data.get('outros_embarcador'),
+                previsao_saida=data.get('previsao_saida'),
+                previsao_de_saida=data.get('previsao_de_saida'),
+                Horario_de_saida=data.get('Horario_de_saida'),
+                inconformidade=data.get('inconformidade'),
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Parada criada com sucesso',
+                'id': nova_parada.id
+            }, status=201)
+            
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': 'JSON inválido'
+            }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Método não permitido'
+    }, status=405)
+
+
+@csrf_exempt
+def paradasegura_api_update(request, pk):
+    """
+    Endpoint para atualizar uma parada existente
+    PUT: Atualiza parada existente
+    """
+    if request.method == 'PUT':
+        try:
+            parada = get_object_or_404(paradasegura, pk=pk)
+            data = json.loads(request.body)
+            
+            # Atualizar campos
+            for field, value in data.items():
+                if hasattr(parada, field):
+                    setattr(parada, field, value)
+            
+            parada.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Parada atualizada com sucesso'
+            })
+            
+        except paradasegura.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Parada não encontrada'
+            }, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': 'JSON inválido'
+            }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Método não permitido'
+    }, status=405)
+
+
+@csrf_exempt
+def paradasegura_api_delete(request, pk):
+    """
+    Endpoint para deletar uma parada
+    DELETE: Remove parada
+    """
+    if request.method == 'DELETE':
+        try:
+            parada = get_object_or_404(paradasegura, pk=pk)
+            parada.delete()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Parada deletada com sucesso'
+            })
+            
+        except paradasegura.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Parada não encontrada'
+            }, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Método não permitido'
+    }, status=405)

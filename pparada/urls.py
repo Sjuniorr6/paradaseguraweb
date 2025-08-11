@@ -19,6 +19,11 @@ from .views import (
     parada_delete,
     ParadaSeguraListView,
     export_excel,
+    paradasegura_api_list,
+    paradasegura_api_detail,
+    paradasegura_api_create,
+    paradasegura_api_update,
+    paradasegura_api_delete,
  
  
 )
@@ -40,7 +45,14 @@ urlpatterns = [
     path('ponto/create/', PontoCreateView.as_view(), name='ponto_create'),
     path('parada/<int:id>/delete/', parada_delete, name='parada_delete'),
     path('relatorios/', ParadaSeguraListView.as_view(), name='parada_segura_list'),
-    path('export/excel/', views.export_excel, name='excel_export'),       
+    path('export/excel/', views.export_excel, name='excel_export'),
+    
+    # API Endpoints JSON
+    path('api/json/list/', paradasegura_api_list, name='paradasegura_api_list'),
+    path('api/json/<int:pk>/', paradasegura_api_detail, name='paradasegura_api_detail'),
+    path('api/json/create/', paradasegura_api_create, name='paradasegura_api_create'),
+    path('api/json/<int:pk>/update/', paradasegura_api_update, name='paradasegura_api_update'),
+    path('api/json/<int:pk>/delete/', paradasegura_api_delete, name='paradasegura_api_delete'),
 ]
 
 # Inclua esta parte apenas se estiver em ambiente de desenvolvimento com DEBUG=True
